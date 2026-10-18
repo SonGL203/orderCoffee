@@ -1,0 +1,38 @@
+@model List<User>
+@{ ViewData["Title"] = "Tài khoản"; var me = User.GetUserId(); }
+<h3 class="mb-3">Tài khoản &amp; phân quyền</h3>
+<div class="card p-3 mb-4">
+    <h6>Tạo tài khoản nhân viên</h6>
+    <form method="post" asp-action="StaffCreate" class="row g-2">
+        <div class="col-md-3"><input name="fullName" class="form-control" placeholder="Họ tên" required /></div>
+        <div class="col-md-3"><input name="phone" class="form-control" placeholder="Số điện thoại (dùng để đăng nhập)" required /></div>
+        <div class="col-md-3"><input name="password" type="password" class="form-control" placeholder="Mật khẩu (>= 6 ký tự)" required minlength="6" /></div>
+        <div class="col-md-2"><select name="role" class="form-select"><option value="Staff">Nhân viên</option><option value="Admin">Admin</option></select></div>
+        <div class="col-md-1"><button class="btn btn-coffee w-100">Tạo</button></div>
+    </form>
+</div>
+<table class="table bg-white align-middle">
+    <thead><tr><th>Họ tên</th><th>Liên hệ</th><th>Điểm</th><th>Quyền</th><th>Trạng thái</th></tr></thead>
+    @foreach (var u in Model)
+    {
+        <tr>
+            <td>@u.FullName @if (u.Id == me) { <span class="badge text-bg-info">Bạn</span> }</td>
+            <td class="small">@u.Phone<br />@u.Email</td>
+            <td>@u.Points</td>
+            <td>
+                <form method="post" asp-action="UserRole" asp-route-id="@u.Id" class="d-flex gap-1">
+                    <select name="role" class="form-select form-select-sm" style="width:130px" disabled="@(u.Id == me)">
+                        @foreach (var r in new[] { Roles.Customer, Roles.Staff, Roles.Admin }) { <option value="@r" selected="@(u.Role == r)">@r</option> }
+                    </select>
+                    @if (u.Id != me) { <button class="btn btn-sm btn-outline-secondary">Lưu</button> }
+                </form>
+            </td>
+            <td>
+                @if (u.Id != me)
+                {
+                    <form method="post" asp-action="UserLock" asp-route-id="@u.Id"><button class="btn btn-sm @(u.IsLocked ? "btn-danger" : "btn-outline-success")">@(u.IsLocked ? "Đang khóa" : "Hoạt động")</button></form>
+                }
+            </td>
+        </tr>
+    }
+</table>

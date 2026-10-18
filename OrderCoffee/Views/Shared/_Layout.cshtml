@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Order Coffee</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+@{
+    var cartCount = Context.Session.GetCart().Sum(c => c.Quantity);
+    var tableCode = Context.Session.GetTableCode();
+    var isStaff = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Staff);
+}
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark app-nav sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="@(tableCode != null ? "/t/" + tableCode + "/menu" : "/")">☕ Order Coffee</a>
+            @if (isStaff)
+            {
+                <div class="dropdown order-lg-last ms-auto ms-lg-2 me-2 me-lg-0" id="alert-dropdown">
+                    <button type="button" id="alert-bell" class="btn btn-link nav-link position-relative px-2 fs-5" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-label="Thông báo">
+                        🔔<span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle d-none" id="alert-count" style="font-size:.6rem">0</span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end p-0 alert-menu">
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                            <b>Thông báo</b>
+                            <div class="d-flex gap-1">
+                                <button type="button" id="alert-toggle" class="btn btn-sm btn-warning">🔕 Bật âm báo</button>
+                                <button type="button" id="alert-clear" class="btn btn-sm btn-outline-secondary" title="Xóa lịch sử thông báo">Xóa</button>
+                            </div>
+                        </div>
+                        <div id="alert-live"></div>
+                        <div id="alert-history"></div>
+                    </div>
+                </div>
+            }
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav"><span class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse" id="nav">
+                <ul class="navbar-nav me-auto">
+                    @if (isStaff)
+                    {
+                        <li class="nav-item"><a class="nav-link" asp-controller="Staff" asp-action="Index">Sơ đồ bàn</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Staff" asp-action="Create">+ Tạo đơn</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Staff" asp-action="Online">Đơn online</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Staff" asp-action="History">Lịch sử</a></li>
+                        @if (User.IsInRole(Roles.Admin))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Quản trị</a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Index">Báo cáo</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Products">Món</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Categories">Danh mục</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Tables">Bàn &amp; QR</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Vouchers">Voucher</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Users">Tài khoản</a></li>
+                                </ul>
+                            </li>
+                        }
+                    }
+                    else if (tableCode != null)
+                    {
+                        <li class="nav-item"><a class="nav-link" href="/t/@tableCode/menu">Thực đơn</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/t/@tableCode/bill">Hóa đơn bàn</a></li>
+                    }
+                    else
+                    {
+                        <li class="nav-item"><a class="nav-link" href="/">Trang chủ</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/menu">Thực đơn</a></li>
+                        @if (User.IsInRole(Roles.Customer))
+                        {
+                            <li class="nav-item"><a class="nav-link" asp-controller="Orders" asp-action="Index">Đơn của tôi</a></li>
+                        }
+                        else if (Context.Session.GetString("LastOrderCode") is { } lastCode)
+                        {
+                            <li class="nav-item"><a class="nav-link" href="/Orders/Details/@lastCode">Đơn vừa đặt</a></li>
+                        }
+                    }
+                </ul>
+                <ul class="navbar-nav align-items-lg-center gap-lg-2">
+                    @if (!isStaff)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Cart" asp-action="Index">🛒 Giỏ hàng <span class="badge rounded-pill bg-warning text-dark" id="cart-badge">@cartCount</span></a>
+                        </li>
+                    }
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">👤 @User.Identity.Name <small class="opacity-75">(@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value)</small></a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                @if (User.IsInRole(Roles.Customer))
+                                {
+                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile">Điểm &amp; voucher</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Orders" asp-action="Index">Đơn của tôi</a></li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                }
+                                <li>
+                                    <form asp-controller="Account" asp-action="Logout" method="post"><button class="dropdown-item">Đăng xuất</button></form>
+                                </li>
+                            </ul>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Đăng nhập</a></li>
+                        <li class="nav-item"><a class="btn btn-warning btn-sm" asp-controller="Account" asp-action="Register" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">Đăng ký</a></li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    @if (tableCode != null && !isStaff)
+    {
+        <div class="table-banner text-center py-1 small">🪑 Bạn đang gọi món tại bàn — nhân viên sẽ mang ra tận nơi</div>
+    }
+
+    <main class="container py-4">
+        @if (TempData["Success"] is string ok) { <div class="alert alert-success alert-dismissible fade show">@ok<button class="btn-close" data-bs-dismiss="alert"></button></div> }
+        @if (TempData["Error"] is string err) { <div class="alert alert-danger alert-dismissible fade show">@err<button class="btn-close" data-bs-dismiss="alert"></button></div> }
+        @RenderBody()
+    </main>
+
+    <footer class="text-center text-muted small py-4 border-top">© 2026 Order Coffee — bản demo MVC</footer>
+
+    <form id="af-form" method="post">@Html.AntiForgeryToken()</form>
+    <div class="toast-container position-fixed bottom-0 end-0 p-3"><div id="toast" class="toast text-bg-dark"><div class="toast-body" id="toast-body"></div></div></div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @if (isStaff)
+    {
+        <div id="alert-stack"></div>
+        <script src="~/js/staff-alerts.js" asp-append-version="true"></script>
+    }
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

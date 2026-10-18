@@ -1,0 +1,86 @@
+@{
+    ViewData["Title"] = "Điểm & voucher";
+    var u = (User)ViewBag.User;
+    var history = (List<PointTransaction>)ViewBag.History;
+    var wallet = (List<UserVoucher>)ViewBag.Wallet;
+    var redeemable = (List<Voucher>)ViewBag.Redeemable;
+    var pub = (List<Voucher>)ViewBag.PublicVouchers;
+    var addresses = (List<UserAddress>)ViewBag.Addresses;
+}
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card p-4 text-center">
+            <div class="fs-1">👤</div>
+            <h5>@u.FullName</h5>
+            <div class="text-muted">@u.Phone @u.Email</div>
+            <hr />
+            <div class="text-muted">Điểm tích lũy</div>
+            <div class="display-4 fw-bold text-coffee">@u.Points</div>
+            <small class="text-muted">Mỗi @Fmt.Money(PromotionService.MoneyPerPoint) thanh toán = 1 điểm</small>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card p-3 mb-4">
+            <h5>Địa chỉ giao hàng đã lưu</h5>
+            <p class="small text-muted">Tự lưu mỗi khi bạn đặt hàng. Khi thanh toán chỉ cần bấm chọn lại.</p>
+            @foreach (var a in addresses)
+            {
+                <div class="d-flex justify-content-between align-items-start border-bottom py-2 gap-2">
+                    <div>
+                        <div>📍 @a.Address</div>
+                        <small class="text-muted">@(string.IsNullOrWhiteSpace(a.ContactName) ? "" : a.ContactName + " · ")@a.Phone @(a.UseCount > 0 ? $" · dùng {a.UseCount} lần" : "") · gần nhất @a.LastUsedAt.ToString("dd/MM/yyyy")</small>
+                    </div>
+                    <form method="post" asp-action="DeleteAddress" onsubmit="return confirm('Xóa địa chỉ này?')"><input type="hidden" name="id" value="@a.Id" /><button class="btn btn-sm btn-outline-danger">Xóa</button></form>
+                </div>
+            }
+            @if (!addresses.Any()) { <p class="text-muted mb-2">Chưa có địa chỉ nào.</p> }
+            <form method="post" asp-action="AddAddress" class="row g-2 mt-2">
+                <div class="col-md-4"><input name="phone" class="form-control form-control-sm" placeholder="Số điện thoại" required /></div>
+                <div class="col-md-4"><input name="contactName" class="form-control form-control-sm" placeholder="Tên người nhận (tùy chọn)" /></div>
+                <div class="col-12"><input name="address" class="form-control form-control-sm" placeholder="Địa chỉ mới: số nhà, đường, phường, quận…" required maxlength="200" /></div>
+                <div class="col-12"><button class="btn btn-sm btn-coffee">+ Thêm địa chỉ</button></div>
+            </form>
+        </div>
+
+        <div class="card p-3 mb-4">
+            <h5>Đổi điểm lấy voucher</h5>
+            @foreach (var v in redeemable)
+            {
+                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                    <div><b>@v.Name</b><br /><small class="text-muted">@v.DisplayValue@(v.MinOrder > 0 ? $" · đơn từ {Fmt.Money(v.MinOrder)}" : "")</small></div>
+                    <form method="post" asp-action="Redeem"><input type="hidden" name="voucherId" value="@v.Id" />
+                        <button class="btn btn-sm @(u.Points >= v.PointCost ? "btn-coffee" : "btn-outline-secondary")" disabled="@(u.Points < v.PointCost)">Đổi @v.PointCost điểm</button>
+                    </form>
+                </div>
+            }
+            @if (!redeemable.Any()) { <p class="text-muted mb-0">Hiện chưa có voucher đổi điểm.</p> }
+        </div>
+
+        <div class="card p-3 mb-4">
+            <h5>Ví voucher của tôi</h5>
+            @foreach (var w in wallet)
+            {
+                <div class="border-bottom py-2"><b>@w.Voucher!.Code</b> — @w.Voucher.Name <br /><small class="text-muted">@w.Voucher.DisplayValue · HSD @w.Voucher.EndAt.ToString("dd/MM/yyyy")</small></div>
+            }
+            @if (!wallet.Any()) { <p class="text-muted mb-0">Ví trống. Hãy đổi điểm để nhận voucher.</p> }
+        </div>
+
+        <div class="card p-3 mb-4">
+            <h5>Mã khuyến mãi công khai</h5>
+            @foreach (var v in pub)
+            {
+                <div class="border-bottom py-2"><b>@v.Code</b> — @v.Name <br /><small class="text-muted">@v.DisplayValue@(v.MinOrder > 0 ? $" · đơn từ {Fmt.Money(v.MinOrder)}" : "") · HSD @v.EndAt.ToString("dd/MM/yyyy")</small></div>
+            }
+        </div>
+
+        <div class="card p-3">
+            <h5>Lịch sử điểm</h5>
+            <table class="table table-sm mb-0">
+                @foreach (var h in history)
+                {
+                    <tr><td>@h.CreatedAt.ToString("dd/MM HH:mm")</td><td>@h.Reason</td><td class="text-end fw-bold @(h.Amount > 0 ? "text-success" : "text-danger")">@(h.Amount > 0 ? "+" : "")@h.Amount</td></tr>
+                }
+            </table>
+        </div>
+    </div>
+</div>

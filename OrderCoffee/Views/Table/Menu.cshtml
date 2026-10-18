@@ -1,0 +1,52 @@
+@{
+    var open = ViewBag.Open as Order;
+    var table = (CafeTable)ViewBag.Table;
+    ViewData["Title"] = "Gọi món - " + table.Name;
+}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h3 class="mb-0">🪑 @table.Name</h3>
+    @if (open != null)
+    {
+        <a class="btn btn-outline-coffee" href="/t/@table.Code/bill">Hóa đơn · @(open.Items.All(i => i.IsServed) ? "✅ Đã ra món" : $"đã ra {open.Items.Count(i => i.IsServed)}/{open.Items.Count} món") · @Fmt.Money(open.Total)</a>
+    }
+</div>
+@if (User.Identity?.IsAuthenticated != true)
+{
+    <div class="alert alert-light border">Bạn có thể gọi món ngay, không cần đăng nhập. <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="/t/@table.Code/menu">Đăng nhập</a> để tích điểm và dùng voucher.</div>
+}
+<partial name="_MenuList" />
+
+@if ((bool)(ViewBag.AskLogin ?? false))
+{
+    var promos = (List<Voucher>)ViewBag.Promos;
+    <div class="modal fade" id="loginPrompt" tabindex="-1" aria-labelledby="loginPromptTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title" id="loginPromptTitle">🎁 Đăng nhập để được giảm giá?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">Đăng nhập để <b>tích điểm</b> cho bill này và dùng <b>voucher giảm giá</b>. Bạn vẫn có thể gọi món bình thường mà không cần tài khoản.</p>
+                    @if (promos.Any())
+                    {
+                        <div class="d-flex flex-column gap-1 mb-1">
+                            @foreach (var v in promos)
+                            {
+                                <div class="voucher-chip"><b>@v.Code</b> · @v.DisplayValue@(v.MinOrder > 0 ? $" · đơn từ {Fmt.Money(v.MinOrder)}" : "")</div>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer border-0 flex-column align-items-stretch gap-2">
+                    <a class="btn btn-coffee" asp-controller="Account" asp-action="Login" asp-route-returnUrl="/t/@table.Code/menu">Đăng nhập</a>
+                    <a class="btn btn-outline-coffee" asp-controller="Account" asp-action="Register" asp-route-returnUrl="/t/@table.Code/menu">Tạo tài khoản mới</a>
+                    <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Tiếp tục không đăng nhập</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @section Scripts {
+        <script>bootstrap.Modal.getOrCreateInstance(document.getElementById('loginPrompt')).show();</script>
+    }
+}

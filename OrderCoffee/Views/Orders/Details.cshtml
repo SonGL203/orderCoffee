@@ -1,0 +1,89 @@
+@model Order
+@{
+    ViewData["Title"] = "Đơn #" + Model.Id;
+    var bank = (IConfigurationSection)ViewBag.Bank;
+    var isDelivery = Model.DeliveryType == DeliveryType.Delivery;
+    var steps = new List<(OrderStatus S, string Text)> { (OrderStatus.Pending, "Chờ xác nhận"), (OrderStatus.Confirmed, "Đã xác nhận"), (OrderStatus.Preparing, "Đang pha chế"),
+        isDelivery ? (OrderStatus.Delivering, "Đang giao") : (OrderStatus.Ready, "Sẵn sàng lấy"), (OrderStatus.Completed, "Hoàn thành") };
+    var cur = steps.FindIndex(x => x.S == Model.Status);
+}
+@if (Model.UserId == null && Model.Status != OrderStatus.Cancelled)
+{
+    <div class="alert alert-info small">📌 Bạn đặt không cần tài khoản. <b>Lưu lại link trang này</b> (hoặc chụp màn hình) để theo dõi đơn. <a asp-controller="Account" asp-action="Register">Đăng ký</a> để tích điểm cho các đơn sau.</div>
+}
+<div data-sse-url="/Orders/Stream/@Model.Code" data-poll-url="@Url.Action("Status", new { code = Model.Code })" data-poll-state="@Model.Status"></div>
+<h3 class="mb-3">Đơn #@Model.Id <span class="badge text-bg-@Fmt.StatusColor(Model.Status) fs-6">@Fmt.Status(Model.Status)</span></h3>
+
+@if (Model.Status == OrderStatus.Cancelled)
+{
+    <div class="alert alert-danger">Đơn đã bị hủy. @Model.CancelReason</div>
+}
+else
+{
+    <div class="card p-3 mb-3">
+        <div class="d-flex justify-content-between text-center">
+            @for (var i = 0; i < steps.Count; i++)
+            {
+                <div class="flex-fill">
+                    <div class="fs-4">@(i <= cur ? "✅" : "⚪")</div>
+                    <small class="@(i == cur ? "fw-bold" : "text-muted")">@steps[i].Text</small>
+                </div>
+            }
+        </div>
+        <div class="text-center small text-muted mt-2">Trang tự cập nhật khi trạng thái thay đổi</div>
+    </div>
+}
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card p-3">
+            <h5>Món đã đặt</h5>
+            @foreach (var i in Model.Items)
+            {
+                <div class="d-flex justify-content-between py-1 border-bottom">
+                    <div>@i.Quantity × @i.ProductName @if (i.Note != null) { <div class="small text-muted">📝 @i.Note</div> }</div>
+                    <span>@Fmt.Money(i.LineTotal)</span>
+                </div>
+            }
+            <div class="d-flex justify-content-between mt-2"><span>Tạm tính</span><span>@Fmt.Money(Model.SubTotal)</span></div>
+            @if (Model.Discount > 0) { <div class="d-flex justify-content-between text-success"><span>Voucher @Model.Voucher?.Code</span><span>-@Fmt.Money(Model.Discount)</span></div> }
+            <div class="d-flex justify-content-between fs-5"><b>Tổng</b><b class="price">@Fmt.Money(Model.Total)</b></div>
+            @if (Model.PointsEarned > 0) { <div class="text-success small mt-1">🎁 Bạn đã nhận +@Model.PointsEarned điểm từ đơn này</div> }
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card p-3 mb-3">
+            <h5>Thông tin nhận hàng</h5>
+            <div>@(isDelivery ? "🛵 Giao tận nơi" : "🏪 Tự đến lấy")</div>
+            <div>@Model.CustomerName · @Model.Phone</div>
+            @if (isDelivery) { <div>📍 @Model.Address</div> }
+            @if (Model.Note != null) { <div class="text-muted">📝 @Model.Note</div> }
+            <hr class="my-2" />
+            <div>Thanh toán: <b>@Fmt.Payment(Model.PaymentMethod)</b> — @(Model.PaymentStatus == PaymentStatus.Paid ? "Đã thanh toán" : "Chưa thanh toán")</div>
+        </div>
+        @if (Model.PaymentMethod == PaymentMethod.BankTransfer && Model.PaymentStatus == PaymentStatus.Unpaid && Model.Status != OrderStatus.Cancelled)
+        {
+            <div class="card p-3 mb-3 border-warning">
+                <h6>Thông tin chuyển khoản</h6>
+                <div>Ngân hàng: <b>@bank["BankName"]</b></div>
+                <div>Số TK: <b>@bank["BankAccount"]</b></div>
+                <div>Chủ TK: <b>@bank["BankOwner"]</b></div>
+                <div>Số tiền: <b class="price">@Fmt.Money(Model.Total)</b></div>
+                <div>Nội dung: <b>DON @Model.Id</b></div>
+                <small class="text-muted">Quán sẽ xác nhận khi nhận được tiền.</small>
+            </div>
+        }
+        <div class="d-flex gap-2">
+            @if (Model.Status == OrderStatus.Pending)
+            {
+                <form method="post" asp-action="Cancel" asp-route-code="@Model.Code" onsubmit="return confirm('Hủy đơn này?')"><button class="btn btn-outline-danger">Hủy đơn</button></form>
+            }
+            @if ((bool)ViewBag.IsOwner)
+            {
+                <form method="post" asp-action="Reorder" asp-route-code="@Model.Code"><button class="btn btn-outline-coffee">Đặt lại đơn này</button></form>
+                <a asp-action="Index" class="btn btn-link">← Tất cả đơn</a>
+            }
+            else { <a href="/menu" class="btn btn-link">← Về thực đơn</a> }
+        </div>
+    </div>
+</div>

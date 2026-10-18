@@ -1,0 +1,102 @@
+@model Order?
+@{
+    var table = (CafeTable)ViewBag.Table;
+    var last = ViewBag.LastPaid as Order;
+    ViewData["Title"] = "Hóa đơn " + table.Name;
+    var uid = User.GetUserId();
+}
+<div data-sse-url="/t/@table.Code/stream" data-poll-url="/t/@table.Code/status"></div>
+<h3 class="mb-3">🪑 @table.Name — Hóa đơn</h3>
+
+@if (Model == null)
+{
+    <div class="text-center py-5">
+        @if (last != null && last.PaidAt > DateTime.Now.AddHours(-2))
+        {
+            <div class="display-1">🎉</div>
+            <h4>Cảm ơn bạn! Đơn #@last.Id đã được thanh toán (@Fmt.Money(last.Total))</h4>
+            @if (last.PointsEarned > 0) { <p class="text-success">Bạn nhận được +@last.PointsEarned điểm.</p> }
+        }
+        else { <p class="text-muted">Bàn chưa có món nào.</p> }
+        <a href="/t/@table.Code/menu" class="btn btn-coffee">Gọi món</a>
+    </div>
+}
+else
+{
+    var waiting = Model.Status == OrderStatus.WaitingPayment;
+    var servedCount = Model.Items.Count(i => i.IsServed);
+    var allServed = Model.Items.Count > 0 && servedCount == Model.Items.Count;
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="card p-3">
+                <div class="d-flex justify-content-between"><h5>Đơn #@Model.Id</h5>
+                    <span class="badge text-bg-@Fmt.StatusColor(Model.Status) align-self-start">@Fmt.Status(Model.Status)</span></div>
+                <div class="alert @(allServed ? "alert-success" : "alert-warning") py-2 my-2">
+                    @if (allServed) { <b>✅ Đã ra món</b><span> — chúc bạn ngon miệng!</span> }
+                    else { <b>👨‍🍳 Đang chuẩn bị món</b><span> — đã ra @servedCount/@Model.Items.Count món</span> }
+                </div>
+                @foreach (var g in Model.Items.GroupBy(i => i.Batch).OrderBy(g => g.Key))
+                {
+                    <div class="small text-muted mt-2">Lần gọi #@g.Key · @g.First().CreatedAt.ToString("HH:mm")</div>
+                    @foreach (var i in g)
+                    {
+                        <div class="d-flex justify-content-between py-1 border-bottom">
+                            <div>@i.Quantity × @i.ProductName
+                                @if (i.IsServed) { <span class="badge text-bg-success">✅ Đã ra món</span> } else { <span class="badge text-bg-warning">Đang chuẩn bị</span> }
+                                @if (i.Note != null) { <div class="small text-muted">📝 @i.Note</div> }</div>
+                            <span>@Fmt.Money(i.LineTotal)</span>
+                        </div>
+                    }
+                }
+                <div class="d-flex justify-content-between mt-2"><span>Tạm tính</span><span>@Fmt.Money(Model.SubTotal)</span></div>
+                @if (Model.Discount > 0) { <div class="d-flex justify-content-between text-success"><span>Voucher @Model.Voucher?.Code</span><span>-@Fmt.Money(Model.Discount)</span></div> }
+                <div class="d-flex justify-content-between fs-5"><b>Tổng</b><b class="price">@Fmt.Money(Model.Total)</b></div>
+            </div>
+            <a href="/t/@table.Code/menu" class="btn btn-outline-coffee mt-3">+ Gọi thêm món</a>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card p-3 mb-3">
+                <h6>Tích điểm &amp; khuyến mãi</h6>
+                @if (uid == null)
+                {
+                    <p class="small text-muted">Đăng nhập (hoặc đăng ký) để tích điểm và dùng voucher cho bill này.</p>
+                    <a class="btn btn-sm btn-coffee" asp-controller="Account" asp-action="Login" asp-route-returnUrl="/t/@table.Code/bill">Đăng nhập</a>
+                }
+                else
+                {
+                    @if (Model.UserId == null)
+                    {
+                        <form method="post" asp-action="Claim" asp-route-code="@table.Code"><button class="btn btn-sm btn-outline-coffee mb-2">Gắn bill vào tài khoản của tôi</button></form>
+                    }
+                    else if (Model.UserId == uid)
+                    {
+                        <div class="small text-success mb-2">✔ Bill đã gắn với tài khoản, sẽ tích @(Model.Total / PromotionService.MoneyPerPoint) điểm.</div>
+                        <form method="post" asp-action="Voucher" asp-route-code="@table.Code" class="input-group">
+                            <input name="voucherCode" class="form-control text-uppercase" placeholder="Mã voucher" value="@Model.Voucher?.Code" />
+                            <button class="btn btn-outline-coffee">Áp dụng</button>
+                        </form>
+                    }
+                    else { <div class="small text-danger">Bill này đang gắn với tài khoản khác.</div> }
+                }
+            </div>
+
+            <div class="card p-3">
+                @if (waiting)
+                {
+                    <div class="alert alert-warning mb-0">⏳ Đã gọi thanh toán (<b>@Fmt.Payment(Model.PaymentMethod)</b>). Nhân viên sẽ đến bàn xác nhận.</div>
+                }
+                else
+                {
+                    <h6>Thanh toán</h6>
+                    @if (!allServed) { <div class="alert alert-secondary py-2 small">Bạn có thể thanh toán sau khi <b>ra đủ món</b> (đã ra @servedCount/@Model.Items.Count).</div> }
+                    <form method="post" asp-action="RequestPayment" asp-route-code="@table.Code">
+                        <div class="form-check"><input class="form-check-input" type="radio" name="method" value="Cash" id="m0" checked /><label class="form-check-label" for="m0">💵 Tiền mặt</label></div>
+                        <div class="form-check mb-3"><input class="form-check-input" type="radio" name="method" value="BankTransfer" id="m1" /><label class="form-check-label" for="m1">🏦 Chuyển khoản</label></div>
+                        <button class="btn btn-coffee w-100" disabled="@(!allServed)">Gọi thanh toán</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+}

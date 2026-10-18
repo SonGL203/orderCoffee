@@ -1,0 +1,77 @@
+@{
+    ViewData["Title"] = "Tạo đơn";
+    var tables = (List<CafeTable>)ViewBag.Tables;
+    var cats = (List<Category>)ViewBag.Categories;
+    int? tableId = ViewBag.TableId;
+}
+<h3 class="mb-3">Tạo đơn cho khách</h3>
+<form method="post" asp-action="Create">
+    <div class="row g-4">
+        <div class="col-lg-5 order-lg-2">
+            <div class="card p-3 sticky-top" style="top:70px">
+                <h6>Loại đơn <small class="text-muted fw-normal">— chọn "Giao hàng" để nhập địa chỉ</small></h6>
+                <div class="btn-group mb-3">
+                    <input type="radio" class="btn-check" name="kind" id="k0" value="table" @(tableId != null ? "checked" : "") onchange="kindChanged()" />
+                    <label class="btn btn-outline-coffee" for="k0">🪑 Tại bàn</label>
+                    <input type="radio" class="btn-check" name="kind" id="k1" value="counter" @(tableId == null ? "checked" : "") onchange="kindChanged()" />
+                    <label class="btn btn-outline-coffee" for="k1">🥡 Mang đi / quầy</label>
+                    <input type="radio" class="btn-check" name="kind" id="k2" value="delivery" onchange="kindChanged()" />
+                    <label class="btn btn-outline-coffee" for="k2">🛵 Giao hàng</label>
+                </div>
+
+                <div id="box-table" class="mb-2">
+                    <select name="tableId" class="form-select">
+                        <option value="">— Chọn bàn —</option>
+                        @foreach (var t in tables) { <option value="@t.Id" selected="@(tableId == t.Id)">@t.Name (@Fmt.Table(t.Status))</option> }
+                    </select>
+                </div>
+                <div id="box-contact">
+                    <input name="customerName" class="form-control mb-2" placeholder="Tên khách (không bắt buộc)" />
+                    <input name="phone" class="form-control mb-2" placeholder="SĐT (nhập SĐT thành viên để tích điểm)" />
+                </div>
+                <div id="box-delivery">
+                    <input name="address" class="form-control mb-2" placeholder="Địa chỉ giao hàng" />
+                </div>
+                <div id="box-extra">
+                    <input name="note" class="form-control mb-2" placeholder="Ghi chú đơn" />
+                    <select name="paymentMethod" class="form-select mb-2"><option value="Cash">💵 Tiền mặt</option><option value="BankTransfer">🏦 Chuyển khoản</option></select>
+                </div>
+                <div class="d-flex justify-content-between fs-5 mb-2"><span>Tạm tính</span><b class="price" id="sum">0đ</b></div>
+                <button class="btn btn-coffee w-100">Tạo đơn</button>
+            </div>
+        </div>
+
+        <div class="col-lg-7 order-lg-1">
+            @foreach (var c in cats)
+            {
+                <h6 class="mt-3">@c.Icon @c.Name</h6>
+                @foreach (var p in c.Products.Where(p => p.IsAvailable).OrderBy(p => p.Name))
+                {
+                    <div class="d-flex justify-content-between align-items-center border-bottom py-1">
+                        <div>@p.Name <span class="price small">@Fmt.Money(p.Price)</span></div>
+                        <div class="d-flex gap-1 align-items-center">
+                            <input name="note_@p.Id" class="form-control form-control-sm" style="width:130px" placeholder="Ghi chú" />
+                            <input type="number" name="qty_@p.Id" min="0" max="50" value="0" data-price="@p.Price" class="form-control form-control-sm qty" style="width:70px" />
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</form>
+@section Scripts {
+    <script>
+        function kindChanged() {
+            const k = document.querySelector('input[name=kind]:checked').value;
+            document.getElementById('box-table').style.display = k === 'table' ? '' : 'none';
+            document.getElementById('box-delivery').style.display = k === 'delivery' ? '' : 'none';
+            document.getElementById('box-extra').style.display = k === 'table' ? 'none' : '';
+        }
+        function recalc() {
+            let t = 0; document.querySelectorAll('.qty').forEach(i => t += (+i.value || 0) * +i.dataset.price);
+            document.getElementById('sum').textContent = t.toLocaleString('vi-VN') + 'đ';
+        }
+        document.querySelectorAll('.qty').forEach(i => i.addEventListener('input', recalc));
+        kindChanged();
+    </script>
+}

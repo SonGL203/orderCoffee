@@ -1,0 +1,30 @@
+@model LoginVm
+@{ ViewData["Title"] = "Đăng nhập"; }
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card p-4">
+            <h4 class="mb-3">Đăng nhập</h4>
+            <form method="post" asp-action="Login">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <input type="hidden" asp-for="ReturnUrl" />
+                <div class="mb-3"><label asp-for="Login" class="form-label"></label><input asp-for="Login" class="form-control" autofocus /><span asp-validation-for="Login" class="text-danger"></span></div>
+                <div class="mb-3"><label asp-for="Password" class="form-label"></label><input asp-for="Password" class="form-control" /><span asp-validation-for="Password" class="text-danger"></span></div>
+                <div class="form-check mb-3"><input asp-for="RememberMe" class="form-check-input" /><label asp-for="RememberMe" class="form-check-label"></label></div>
+                <button class="btn btn-coffee w-100">Đăng nhập</button>
+            </form>
+            <hr />
+            <div class="text-center">Chưa có tài khoản? <a asp-action="Register" asp-route-returnUrl="@Model.ReturnUrl">Đăng ký</a></div>
+            @if (Context.Session.GetTableCode() is { } code)
+            {
+                <div class="text-center mt-2"><a href="/t/@code/menu">Tiếp tục gọi món không cần đăng nhập</a></div>
+            }
+        </div>
+        <div class="card p-3 mt-3 small text-muted">
+            <b>Tài khoản test:</b>
+            Admin: admin@coffee.vn / Admin@123 ·
+            Nhân viên: staff@coffee.vn / Staff@123 ·
+            Khách: khach@coffee.vn / Khach@123
+        </div>
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

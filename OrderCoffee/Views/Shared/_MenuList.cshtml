@@ -1,0 +1,83 @@
+@{
+    var table = ViewBag.Table as CafeTable;
+    var categories = (List<Category>)ViewBag.Categories;
+    var products = (List<Product>)ViewBag.Products;
+    int? categoryId = ViewBag.CategoryId;
+    string? q = ViewBag.Q;
+    var basePath = table != null ? $"/t/{table.Code}/menu" : "/menu";
+    var cartCount = Context.Session.GetCart().Sum(c => c.Quantity);
+    var cartTotal = Context.Session.GetCart().Sum(c => c.LineTotal);
+}
+
+<form method="get" action="@basePath" class="row g-2 mb-3">
+    <div class="col">
+        <input name="q" value="@q" class="form-control" placeholder="Tìm món…" />
+        @if (categoryId.HasValue) { <input type="hidden" name="categoryId" value="@categoryId" /> }
+    </div>
+    <div class="col-auto"><button class="btn btn-coffee">Tìm</button></div>
+</form>
+
+<div class="cat-scroll mb-3">
+    <a class="cat-chip @(categoryId == null ? "active" : "")" href="@basePath">Tất cả</a>
+    @foreach (var c in categories)
+    {
+        <a class="cat-chip @(categoryId == c.Id ? "active" : "")" href="@basePath?categoryId=@c.Id">@c.Icon @c.Name</a>
+    }
+</div>
+
+@if (!products.Any())
+{
+    <p class="text-muted">Không tìm thấy món nào.</p>
+}
+<div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+    @foreach (var p in products)
+    {
+        <div class="col">
+            <div class="card product-card h-100 @(p.IsAvailable ? "" : "sold-out")">
+                <div class="emoji">@p.Category?.Icon</div>
+                <div class="card-body d-flex flex-column">
+                    <h6 class="mb-1">@p.Name</h6>
+                    <small class="text-muted flex-grow-1">@p.Description</small>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span class="price">@Fmt.Money(p.Price)</span>
+                        @if (p.IsAvailable)
+                        {
+                            <button class="btn btn-sm btn-coffee" data-add-product="@p.Id" data-name="@p.Name" data-price="@Fmt.Money(p.Price)">+ Thêm</button>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-secondary">Hết hàng</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<a id="floating-cart" href="/Cart" class="btn btn-warning btn-lg floating-cart @(cartCount == 0 ? "d-none" : "")">🛒 <span>@cartCount món · @Fmt.Money(cartTotal)</span> →</a>
+
+<div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="add-name"></h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="price mb-3" id="add-price"></div>
+                <div class="d-flex align-items-center gap-2 mb-3 stepper">
+                    <span>Số lượng</span>
+                    <button class="btn btn-outline-secondary" id="add-minus" type="button">−</button>
+                    <input id="add-qty" class="form-control text-center" style="width:70px" value="1" readonly />
+                    <button class="btn btn-outline-secondary" id="add-plus" type="button">+</button>
+                </div>
+                <input id="add-note" class="form-control mb-2" maxlength="200" placeholder="Ghi chú (ít đá, ít đường…)" />
+                <div class="d-flex flex-wrap gap-1">
+                    @foreach (var n in new[] { "Ít đá", "Không đá", "Ít đường", "Không đường", "Thêm sữa" })
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-note="@n">@n</button>
+                    }
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-coffee w-100" id="add-confirm">Thêm vào giỏ</button></div>
+        </div>
+    </div>
+</div>

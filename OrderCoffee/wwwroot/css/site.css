@@ -1,0 +1,51 @@
+:root { --coffee: #5b3a29; --coffee-dark: #3e2618; --cream: #faf5ef; --accent: #c8803c; }
+body { background: var(--cream); color: #2b2118; }
+.app-nav { background: var(--coffee-dark); }
+.app-nav .nav-link { color: #f1e4d6; }
+.app-nav .nav-link:hover { color: #fff; }
+.table-banner { background: var(--accent); color: #fff; }
+.btn-coffee { background: var(--coffee); color: #fff; border: 0; }
+.btn-coffee:hover { background: var(--coffee-dark); color: #fff; }
+.btn-outline-coffee { border: 1px solid var(--coffee); color: var(--coffee); }
+.btn-outline-coffee:hover { background: var(--coffee); color: #fff; }
+.btn-check:checked + .btn-outline-coffee, .btn-check:active + .btn-outline-coffee { background: var(--coffee); color: #fff; border-color: var(--coffee); }
+.text-coffee { color: var(--coffee); }
+.hero { background: linear-gradient(135deg, var(--coffee-dark), var(--coffee)); color: #fff; border-radius: 1rem; padding: 3rem 2rem; }
+.card { border: 0; box-shadow: 0 1px 4px rgba(60, 40, 20, .1); border-radius: .8rem; }
+.product-card .emoji { font-size: 2.6rem; background: #f3e7da; border-radius: .8rem .8rem 0 0; text-align: center; padding: .8rem 0; }
+.product-card.sold-out { opacity: .55; }
+.price { color: var(--accent); font-weight: 700; }
+.cat-chip { border-radius: 2rem; padding: .3rem 1rem; border: 1px solid var(--coffee); color: var(--coffee); text-decoration: none; white-space: nowrap; background: #fff; }
+.cat-chip.active, .cat-chip:hover { background: var(--coffee); color: #fff; }
+.cat-scroll { display: flex; gap: .5rem; overflow-x: auto; padding-bottom: .4rem; }
+.table-tile { border-radius: .8rem; padding: 1rem; color: #fff; min-height: 130px; display: block; text-decoration: none; position: relative; }
+.table-tile:hover { color: #fff; filter: brightness(1.08); }
+.table-tile.available { background: #4f9d69; }
+.table-tile.occupied { background: #3b72b8; }
+.table-tile.waitingpayment { background: #d99a1e; }
+.table-tile .tb-name { font-size: 1.3rem; font-weight: 700; }
+.floating-cart { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 1030; border-radius: 2rem; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); }
+.qr-card { page-break-inside: avoid; }
+@media print { .app-nav, footer, .no-print, .table-banner { display: none !important; } body { background: #fff; } }
+.voucher-chip { border: 1px dashed var(--accent); border-radius: .6rem; padding: .4rem .7rem; background: #fff8ef; cursor: pointer; font-size: .85rem; }
+.voucher-chip:hover { background: #ffeed6; }
+.stepper button { width: 34px; }
+
+#alert-stack { position: fixed; top: 70px; right: 16px; z-index: 2000; display: flex; flex-direction: column; gap: .5rem; max-width: 340px; }
+.alert-toast { background: #fff; border-left: 5px solid var(--accent); border-radius: .6rem; padding: .7rem 1rem; box-shadow: 0 4px 16px rgba(0, 0, 0, .25); color: #2b2118; text-decoration: none; font-weight: 600; animation: alert-in .25s ease-out; }
+.alert-toast:hover { background: #fff8ef; color: #2b2118; }
+@keyframes alert-in { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.alert-menu { width: 360px; max-width: 92vw; max-height: 75vh; overflow-y: auto; }
+.alert-section { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: #8a7a6a; background: #f6efe6; padding: .35rem 1rem; }
+.alert-item { display: block; padding: .55rem 1rem; border-bottom: 1px solid #eee; color: #2b2118; text-decoration: none; font-size: .9rem; }
+.alert-item:hover { background: #fff8ef; color: #2b2118; }
+.alert-item.unread { background: #fff4e0; font-weight: 600; }
+.alert-item small { display: block; color: #8a7a6a; font-weight: 400; }
+.alert-empty { padding: .8rem 1rem; color: #8a7a6a; font-size: .9rem; }
+.bell-ring { animation: bell-ring 1.2s ease-in-out infinite; transform-origin: 50% 20%; }
+@keyframes bell-ring { 0%, 60%, 100% { transform: rotate(0); } 10%, 30% { transform: rotate(14deg); } 20%, 40% { transform: rotate(-14deg); } 50% { transform: rotate(8deg); } }
+/* Điện thoại: hộp thông báo trải gần hết chiều ngang để không bị cắt mép */
+@media (max-width: 575.98px) {
+    .alert-menu { position: fixed !important; top: 62px !important; left: 8px !important; right: 8px !important; width: auto; max-width: none; transform: none !important; inset-inline: 8px !important; }
+}

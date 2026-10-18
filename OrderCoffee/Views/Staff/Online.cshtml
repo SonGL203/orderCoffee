@@ -1,0 +1,58 @@
+@model List<Order>
+@{
+    ViewData["Title"] = "Đơn online";
+    var tab = (string)ViewBag.Tab;
+}
+@if (tab == "active") { <div data-autorefresh="10"></div> }
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Đơn online</h3>
+    <ul class="nav nav-pills">
+        <li class="nav-item"><a class="nav-link @(tab == "active" ? "active" : "")" asp-action="Online" asp-route-tab="active">Đang xử lý</a></li>
+        <li class="nav-item"><a class="nav-link @(tab == "done" ? "active" : "")" asp-action="Online" asp-route-tab="done">Đã xong</a></li>
+    </ul>
+</div>
+@if (!Model.Any()) { <p class="text-muted">Không có đơn nào.</p> }
+<div class="vstack gap-3">
+    @foreach (var o in Model)
+    {
+        var next = OrderService.NextOnlineStatus(o);
+        var nextText = o.Status switch
+        {
+            OrderStatus.Pending => "Nhận đơn",
+            OrderStatus.Confirmed => "Bắt đầu pha chế",
+            OrderStatus.Preparing => o.DeliveryType == DeliveryType.Delivery ? "Giao hàng" : "Sẵn sàng lấy",
+            OrderStatus.Ready or OrderStatus.Delivering => o.PaymentStatus == PaymentStatus.Paid ? "Hoàn thành" : "Hoàn thành & đã thu tiền",
+            _ => ""
+        };
+        <div class="card p-3 @(o.Status == OrderStatus.Pending ? "border border-danger" : "")">
+            <div class="d-flex justify-content-between flex-wrap gap-2">
+                <div>
+                    <a asp-action="OrderDetail" asp-route-id="@o.Id" class="fw-bold">#@o.Id</a>
+                    <span class="badge text-bg-@Fmt.StatusColor(o.Status)">@Fmt.Status(o.Status)</span>
+                    <span class="badge text-bg-light border">@(o.DeliveryType == DeliveryType.Delivery ? "🛵 Giao hàng" : "🏪 Tự lấy")</span>
+                    <span class="badge text-bg-light border">@Fmt.Payment(o.PaymentMethod) · @(o.PaymentStatus == PaymentStatus.Paid ? "đã thu" : "chưa thu")</span>
+                    <div class="small text-muted">@o.CreatedAt.ToString("HH:mm dd/MM") · @(string.IsNullOrWhiteSpace(o.CustomerName) ? "Khách" : o.CustomerName) · @o.Phone</div>
+                    @if (o.Address != null) { <div class="small">📍 @o.Address</div> }
+                    @if (o.Note != null) { <div class="small text-muted">📝 @o.Note</div> }
+                </div>
+                <div class="text-end"><div class="price fs-5">@Fmt.Money(o.Total)</div>@if (o.Discount > 0) { <small class="text-success">đã giảm @Fmt.Money(o.Discount)</small> }</div>
+            </div>
+            <ul class="mb-2 mt-2">
+                @foreach (var i in o.Items) { <li>@i.Quantity × @i.ProductName @if (i.Note != null) { <em class="text-muted">(@i.Note)</em> }</li> }
+            </ul>
+            @if (next != null)
+            {
+                <div class="d-flex gap-2">
+                    <form method="post" asp-action="Advance" asp-route-id="@o.Id"><input type="hidden" name="tab" value="@tab" /><button class="btn btn-coffee">@nextText →</button></form>
+                    @if (o.Status == OrderStatus.Pending || o.Status == OrderStatus.Confirmed)
+                    {
+                        <form method="post" asp-action="RejectOnline" asp-route-id="@o.Id" onsubmit="var r = prompt('Lý do từ chối?', 'Quán hết nguyên liệu'); if (r === null) return false; this.reason.value = r;">
+                            <input type="hidden" name="reason" /><button class="btn btn-outline-danger">Từ chối</button>
+                        </form>
+                    }
+                </div>
+            }
+            @if (o.Status == OrderStatus.Cancelled) { <div class="text-danger small">Lý do hủy: @o.CancelReason</div> }
+        </div>
+    }
+</div>

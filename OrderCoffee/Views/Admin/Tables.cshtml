@@ -1,0 +1,27 @@
+@model List<CafeTable>
+@{ ViewData["Title"] = "Bàn & QR"; }
+<div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
+    <h3>Bàn &amp; mã QR</h3>
+    <div class="d-flex gap-2">
+        <a asp-action="TablePrint" class="btn btn-outline-coffee" target="_blank">🖨 In tất cả QR</a>
+        <form method="post" asp-action="TableAdd" class="input-group"><input name="name" class="form-control" placeholder="Tên bàn mới" required /><button class="btn btn-coffee">Thêm</button></form>
+    </div>
+</div>
+<div class="alert alert-info small">Mã QR trỏ tới <code>@ViewBag.BaseUrl/t/&lt;mã bàn&gt;</code>. Muốn điện thoại quét được, đặt <code>Shop:PublicBaseUrl</code> trong appsettings.json thành IP máy tính (vd. http://192.168.1.29:5190), chạy app bằng profile <b>lan</b> rồi tải lại trang này.</div>
+<div class="row row-cols-2 row-cols-md-4 g-3">
+    @foreach (var t in Model)
+    {
+        <div class="col">
+            <div class="card p-3 text-center h-100">
+                <b>@t.Name</b>
+                <span class="badge text-bg-@Fmt.TableColor(t.Status) mx-auto mb-2">@Fmt.Table(t.Status)</span>
+                <a href="/t/@t.Code" target="_blank"><img src="@Url.Action("TableQr", new { id = t.Id })" class="img-fluid" alt="QR @t.Name" /></a>
+                <small class="text-muted">/t/@t.Code</small>
+                <div class="d-flex gap-1 justify-content-center mt-2">
+                    <form method="post" asp-action="TableRegenCode" asp-route-id="@t.Id" onsubmit="return confirm('Đổi mã sẽ làm QR cũ hết hiệu lực. Tiếp tục?')"><button class="btn btn-sm btn-outline-secondary">Đổi mã</button></form>
+                    <form method="post" asp-action="TableDelete" asp-route-id="@t.Id" onsubmit="return confirm('Xóa bàn?')"><button class="btn btn-sm btn-outline-danger">Xóa</button></form>
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,60 @@
+@model List<CartItem>
+@{
+    ViewData["Title"] = "Giỏ hàng";
+    var table = ViewBag.Table as CafeTable;
+    var total = Model.Sum(c => c.LineTotal);
+}
+<h3 class="mb-3">🛒 Giỏ hàng @(table != null ? $"— {table.Name}" : "")</h3>
+
+@if (!Model.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <div class="display-1">🛒</div>
+        <p>Giỏ hàng đang trống</p>
+        <a href="@(table != null ? $"/t/{table.Code}/menu" : "/menu")" class="btn btn-coffee">Xem thực đơn</a>
+    </div>
+}
+else
+{
+    <div class="card mb-3">
+        <ul class="list-group list-group-flush">
+            @for (var i = 0; i < Model.Count; i++)
+            {
+                var c = Model[i];
+                <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <b>@c.Name</b>
+                        @if (!string.IsNullOrEmpty(c.Note)) { <div class="small text-muted">📝 @c.Note</div> }
+                        <div class="price">@Fmt.Money(c.Price)</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <form method="post" asp-action="Change"><input type="hidden" name="index" value="@i" /><input type="hidden" name="delta" value="-1" /><button class="btn btn-sm btn-outline-secondary">−</button></form>
+                        <b>@c.Quantity</b>
+                        <form method="post" asp-action="Change"><input type="hidden" name="index" value="@i" /><input type="hidden" name="delta" value="1" /><button class="btn btn-sm btn-outline-secondary">+</button></form>
+                        <span style="min-width:90px" class="text-end fw-bold">@Fmt.Money(c.LineTotal)</span>
+                        <form method="post" asp-action="Change"><input type="hidden" name="index" value="@i" /><input type="hidden" name="delta" value="-100" /><button class="btn btn-sm btn-outline-danger" title="Xóa">✕</button></form>
+                    </div>
+                </li>
+            }
+        </ul>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Tạm tính</h5><h4 class="price mb-0">@Fmt.Money(total)</h4>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="@(table != null ? $"/t/{table.Code}/menu" : "/menu")" class="btn btn-outline-coffee">← Gọi thêm món</a>
+        <form method="post" asp-action="Clear"><button class="btn btn-outline-danger">Xóa giỏ</button></form>
+        <div class="ms-auto">
+            @if (table != null)
+            {
+                <form method="post" asp-controller="Table" asp-action="Submit" asp-route-code="@table.Code"><button class="btn btn-coffee btn-lg">Gửi món cho @table.Name →</button></form>
+            }
+            else
+            {
+                <a asp-controller="Orders" asp-action="Checkout" class="btn btn-coffee btn-lg">Đặt hàng →</a>
+            }
+        </div>
+    </div>
+}

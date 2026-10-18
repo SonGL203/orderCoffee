@@ -1,0 +1,22 @@
+@model List<Order>
+@{ ViewData["Title"] = "Đơn của tôi"; }
+<h3 class="mb-3">Đơn hàng của tôi</h3>
+@if (!Model.Any()) { <p class="text-muted">Bạn chưa có đơn nào. <a href="/menu">Đặt món ngay</a></p> }
+<div class="vstack gap-2">
+    @foreach (var o in Model)
+    {
+        <a asp-action="Details" asp-route-code="@o.Code" class="card p-3 text-decoration-none text-reset">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <b>#@o.Id</b> · <small class="text-muted">@o.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                    <span class="badge text-bg-light border">@(o.Type == OrderType.Online ? (o.DeliveryType == DeliveryType.Delivery ? "🛵 Giao hàng" : "🏪 Tự lấy") : "🪑 Tại bàn")</span>
+                    <div class="small text-muted">@string.Join(", ", o.Items.Take(3).Select(i => $"{i.Quantity}× {i.ProductName}"))@(o.Items.Count > 3 ? "…" : "")</div>
+                </div>
+                <div class="text-end">
+                    <span class="badge text-bg-@Fmt.StatusColor(o.Status)">@Fmt.Status(o.Status)</span>
+                    <div class="price">@Fmt.Money(o.Total)</div>
+                </div>
+            </div>
+        </a>
+    }
+</div>

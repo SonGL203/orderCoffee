@@ -1,0 +1,18 @@
+@model Order
+@{ ViewData["Title"] = "Đơn #" + Model.Id; }
+<h3>Đơn #@Model.Id <span class="badge text-bg-@Fmt.StatusColor(Model.Status)">@Fmt.Status(Model.Status)</span></h3>
+<div class="card p-3 mb-3">
+    <div>Loại: <b>@(Model.Type == OrderType.Online ? "Online" : "Tại bàn — " + Model.Table?.Name)</b></div>
+    <div>Tạo lúc: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm") @if (Model.PaidAt != null) { <span>· Thanh toán: @Model.PaidAt.Value.ToString("dd/MM/yyyy HH:mm") (@Fmt.Payment(Model.PaymentMethod))</span> }</div>
+    @if (Model.User != null) { <div>Khách: @Model.User.FullName · @Model.User.Phone</div> } else if (Model.Type == OrderType.DineIn) { <div class="text-muted">Khách vãng lai</div> }
+    @if (Model.CustomerName != null) { <div>Người nhận: @Model.CustomerName · @Model.Phone @Model.Address</div> }
+    @if (Model.PointsEarned > 0) { <div class="text-success">Đã tích +@Model.PointsEarned điểm</div> }
+    @if (Model.CancelReason != null) { <div class="text-danger">Lý do hủy: @Model.CancelReason</div> }
+</div>
+<div class="card p-3">
+    @foreach (var i in Model.Items) { <div class="d-flex justify-content-between border-bottom py-1"><span>@i.Quantity × @i.ProductName @if (i.Note != null) { <em class="text-muted">(@i.Note)</em> }</span><span>@Fmt.Money(i.LineTotal)</span></div> }
+    <div class="d-flex justify-content-between mt-2"><span>Tạm tính</span><span>@Fmt.Money(Model.SubTotal)</span></div>
+    @if (Model.Discount > 0) { <div class="d-flex justify-content-between text-success"><span>Voucher @Model.Voucher?.Code</span><span>-@Fmt.Money(Model.Discount)</span></div> }
+    <div class="d-flex justify-content-between fs-5"><b>Tổng</b><b class="price">@Fmt.Money(Model.Total)</b></div>
+</div>
+<a href="javascript:history.back()" class="btn btn-link mt-2">← Quay lại</a>

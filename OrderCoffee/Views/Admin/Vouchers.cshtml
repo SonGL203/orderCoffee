@@ -1,0 +1,21 @@
+@model List<Voucher>
+@{ ViewData["Title"] = "Voucher"; }
+<div class="d-flex justify-content-between mb-3"><h3>Voucher &amp; khuyến mãi</h3><a asp-action="VoucherEdit" class="btn btn-coffee">+ Tạo voucher</a></div>
+<table class="table bg-white align-middle">
+    <thead><tr><th>Mã</th><th>Ưu đãi</th><th>Điều kiện</th><th>Loại</th><th>Đã dùng</th><th>HSD</th><th></th></tr></thead>
+    @foreach (var v in Model)
+    {
+        <tr class="@(v.IsActive ? "" : "text-muted")">
+            <td><b>@v.Code</b><div class="small">@v.Name</div></td>
+            <td>@v.DisplayValue</td>
+            <td class="small">Đơn từ @Fmt.Money(v.MinOrder)@(v.PerUserLimit.HasValue ? $" · {v.PerUserLimit}/người" : "")</td>
+            <td>@(v.PointCost > 0 ? $"Đổi {v.PointCost} điểm" : "Công khai")</td>
+            <td>@v.UsedCount@(v.UsageLimit.HasValue ? $"/{v.UsageLimit}" : "")</td>
+            <td class="small">@v.StartAt.ToString("dd/MM/yy") – @v.EndAt.ToString("dd/MM/yy")</td>
+            <td class="text-end">
+                <a asp-action="VoucherEdit" asp-route-id="@v.Id" class="btn btn-sm btn-outline-secondary">Sửa</a>
+                <form method="post" asp-action="VoucherToggle" asp-route-id="@v.Id" class="d-inline"><button class="btn btn-sm @(v.IsActive ? "btn-success" : "btn-secondary")">@(v.IsActive ? "Bật" : "Tắt")</button></form>
+            </td>
+        </tr>
+    }
+</table>

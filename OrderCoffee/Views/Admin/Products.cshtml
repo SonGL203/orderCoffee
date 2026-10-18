@@ -1,0 +1,23 @@
+@model List<Product>
+@{ ViewData["Title"] = "Món"; }
+<div class="d-flex justify-content-between mb-3"><h3>Quản lý món</h3><a asp-action="ProductEdit" class="btn btn-coffee">+ Thêm món</a></div>
+<table class="table bg-white align-middle">
+    <thead><tr><th>Món</th><th>Danh mục</th><th class="text-end">Giá</th><th>Trạng thái</th><th></th></tr></thead>
+    @foreach (var p in Model)
+    {
+        <tr>
+            <td><b>@p.Name</b><div class="small text-muted">@p.Description</div></td>
+            <td>@p.Category?.Icon @p.Category?.Name</td>
+            <td class="text-end">@Fmt.Money(p.Price)</td>
+            <td>
+                <form method="post" asp-action="ProductToggle" asp-route-id="@p.Id">
+                    <button class="btn btn-sm @(p.IsAvailable ? "btn-success" : "btn-secondary")">@(p.IsAvailable ? "Đang bán" : "Hết hàng")</button>
+                </form>
+            </td>
+            <td class="text-end">
+                <a asp-action="ProductEdit" asp-route-id="@p.Id" class="btn btn-sm btn-outline-secondary">Sửa</a>
+                <form method="post" asp-action="ProductDelete" asp-route-id="@p.Id" class="d-inline" onsubmit="return confirm('Xóa món này?')"><button class="btn btn-sm btn-outline-danger">Xóa</button></form>
+            </td>
+        </tr>
+    }
+</table>

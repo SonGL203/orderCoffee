@@ -1,0 +1,12 @@
+@model Category
+@{ ViewData["Title"] = Model.Id == 0 ? "Thêm danh mục" : "Sửa danh mục"; }
+<h3 class="mb-3">@ViewData["Title"]</h3>
+<form method="post" class="card p-3" style="max-width:500px">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3"><label asp-for="Name" class="form-label">Tên</label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="Icon" class="form-label">Icon (emoji)</label><input asp-for="Icon" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="SortOrder" class="form-label">Thứ tự hiển thị</label><input asp-for="SortOrder" class="form-control" /></div>
+    <div><button class="btn btn-coffee">Lưu</button> <a asp-action="Categories" class="btn btn-link">Hủy</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

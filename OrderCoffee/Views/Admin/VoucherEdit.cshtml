@@ -1,0 +1,24 @@
+@model Voucher
+@{ ViewData["Title"] = Model.Id == 0 ? "Tạo voucher" : "Sửa voucher"; }
+<h3 class="mb-3">@ViewData["Title"]</h3>
+<form method="post" class="card p-3" style="max-width:640px">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="row g-3">
+        <div class="col-md-5"><label asp-for="Code" class="form-label">Mã</label><input asp-for="Code" class="form-control text-uppercase" /><span asp-validation-for="Code" class="text-danger"></span></div>
+        <div class="col-md-7"><label asp-for="Name" class="form-label">Tên hiển thị</label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger"></span></div>
+        <div class="col-md-4"><label asp-for="Type" class="form-label">Loại giảm</label>
+            <select asp-for="Type" class="form-select"><option value="Percent">Phần trăm (%)</option><option value="Fixed">Số tiền cố định (đ)</option></select></div>
+        <div class="col-md-4"><label asp-for="Value" class="form-label">Giá trị giảm</label><input asp-for="Value" class="form-control" /><span asp-validation-for="Value" class="text-danger"></span></div>
+        <div class="col-md-4"><label asp-for="MaxDiscount" class="form-label">Giảm tối đa (đ)</label><input asp-for="MaxDiscount" class="form-control" /></div>
+        <div class="col-md-4"><label asp-for="MinOrder" class="form-label">Đơn tối thiểu (đ)</label><input asp-for="MinOrder" class="form-control" /></div>
+        <div class="col-md-4"><label asp-for="StartAt" class="form-label">Từ ngày</label><input asp-for="StartAt" type="date" class="form-control" /></div>
+        <div class="col-md-4"><label asp-for="EndAt" class="form-label">Đến ngày</label><input asp-for="EndAt" type="date" class="form-control" /><span asp-validation-for="EndAt" class="text-danger"></span></div>
+        <div class="col-md-4"><label asp-for="UsageLimit" class="form-label">Tổng lượt dùng</label><input asp-for="UsageLimit" class="form-control" placeholder="Không giới hạn" /></div>
+        <div class="col-md-4"><label asp-for="PerUserLimit" class="form-label">Lượt / người</label><input asp-for="PerUserLimit" class="form-control" placeholder="Không giới hạn" /></div>
+        <div class="col-md-4"><label asp-for="PointCost" class="form-label">Giá đổi điểm</label><input asp-for="PointCost" class="form-control" /><small class="text-muted">0 = mã công khai</small></div>
+        <div class="col-12 form-check ms-2"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label">Đang bật</label></div>
+    </div>
+    <div class="mt-3"><button class="btn btn-coffee">Lưu</button> <a asp-action="Vouchers" class="btn btn-link">Hủy</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -1,0 +1,84 @@
+@{
+    var table = (CafeTable)ViewBag.Table;
+    var o = ViewBag.Order as Order;
+    var products = (List<Product>)ViewBag.Products;
+    ViewData["Title"] = table.Name;
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">@table.Name <span class="badge text-bg-@Fmt.TableColor(table.Status) fs-6">@Fmt.Table(table.Status)</span></h3>
+    <a asp-action="Index" class="btn btn-link">← Sơ đồ bàn</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card p-3">
+            @if (o == null)
+            {
+                <p class="text-muted mb-0">Bàn trống. Có thể thêm món bên phải để mở bàn cho khách chưa dùng điện thoại.</p>
+                @if (table.Status != TableStatus.Available)
+                {
+                    <form method="post" asp-action="ResetTable" asp-route-id="@table.Id" class="mt-2"><button class="btn btn-sm btn-outline-secondary">Đặt lại về trống</button></form>
+                }
+            }
+            else
+            {
+                <div class="d-flex justify-content-between"><h5>Đơn #@o.Id @if (o.User != null) { <small class="text-muted">· 👤 @o.User.FullName (@o.User.Phone)</small> }</h5>
+                    <span class="badge text-bg-@Fmt.StatusColor(o.Status) align-self-start">@Fmt.Status(o.Status)</span></div>
+                <div class="mb-1">@if (o.Items.All(i => i.IsServed)) { <span class="badge text-bg-success">✅ Đã ra món</span> } else { <span class="badge text-bg-warning">👨‍🍳 Còn @o.Items.Count(i => !i.IsServed) món chưa ra</span> }</div>
+                @foreach (var g in o.Items.GroupBy(i => i.Batch).OrderBy(g => g.Key))
+                {
+                    <div class="small text-muted mt-2">Lần gọi #@g.Key · @g.First().CreatedAt.ToString("HH:mm")</div>
+                    @foreach (var i in g)
+                    {
+                        <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                            <div>
+                                <b>@i.Quantity ×</b> @i.ProductName
+                                @if (i.Note != null) { <div class="small text-muted">📝 @i.Note</div> }
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span>@Fmt.Money(i.LineTotal)</span>
+                                <form method="post" asp-action="ServeItem">
+                                    <input type="hidden" name="itemId" value="@i.Id" /><input type="hidden" name="served" value="@((!i.IsServed).ToString().ToLower())" />
+                                    <button class="btn btn-sm @(i.IsServed ? "btn-success" : "btn-outline-success")">@(i.IsServed ? "✅ Đã ra món" : "Ra món")</button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                }
+                <div class="d-flex justify-content-between mt-2"><span>Tạm tính</span><span>@Fmt.Money(o.SubTotal)</span></div>
+                @if (o.Discount > 0) { <div class="d-flex justify-content-between text-success"><span>Voucher @o.Voucher?.Code</span><span>-@Fmt.Money(o.Discount)</span></div> }
+                <div class="d-flex justify-content-between fs-4"><b>Cần thu</b><b class="price">@Fmt.Money(o.Total)</b></div>
+                <form method="post" asp-action="ServeAll" asp-route-orderId="@o.Id" class="mt-1"><button class="btn btn-sm btn-outline-success">Đánh dấu tất cả đã mang ra</button></form>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        @if (o != null)
+        {
+            <div class="card p-3 mb-3 @(o.Status == OrderStatus.WaitingPayment ? "border-warning border-2" : "")">
+                <h6>Thanh toán @if (o.Status == OrderStatus.WaitingPayment) { <span class="badge text-bg-warning">Khách đã gọi thanh toán</span> }</h6>
+                <form method="post" asp-action="ConfirmPayment" asp-route-orderId="@o.Id">
+                    <div class="mb-2">
+                        <label class="me-3"><input type="radio" name="method" value="Cash" @(o.PaymentMethod == PaymentMethod.Cash ? "checked" : "") /> 💵 Tiền mặt</label>
+                        <label><input type="radio" name="method" value="BankTransfer" @(o.PaymentMethod == PaymentMethod.BankTransfer ? "checked" : "") /> 🏦 Chuyển khoản</label>
+                    </div>
+                    @if (o.Items.Any(i => !i.IsServed)) { <div class="alert alert-warning py-2 small">Còn @o.Items.Count(i => !i.IsServed) món chưa ra — ra đủ món mới thanh toán được.</div> }
+                    <button class="btn btn-success w-100" disabled="@(o.Items.Any(i => !i.IsServed))" onclick="return confirm('Xác nhận đã thu @Fmt.Money(o.Total)?\nBàn sẽ chuyển về trạng thái trống.')">✔ Xác nhận đã thanh toán — trả bàn</button>
+                </form>
+                <form method="post" asp-action="CancelTableOrder" asp-route-orderId="@o.Id" class="mt-2" onsubmit="return confirm('Hủy toàn bộ đơn của bàn này?')"><button class="btn btn-sm btn-outline-danger">Hủy đơn</button></form>
+            </div>
+        }
+        <div class="card p-3">
+            <h6>Gọi món hộ khách</h6>
+            <form method="post" asp-action="AddItem">
+                <input type="hidden" name="tableId" value="@table.Id" />
+                <select name="productId" class="form-select mb-2">
+                    @foreach (var p in products) { <option value="@p.Id">@p.Name — @Fmt.Money(p.Price)</option> }
+                </select>
+                <div class="input-group mb-2"><span class="input-group-text">SL</span><input type="number" name="quantity" value="1" min="1" max="50" class="form-control" style="max-width:90px" /><input name="note" class="form-control" placeholder="Ghi chú" /></div>
+                <button class="btn btn-coffee w-100">+ Thêm vào bàn</button>
+            </form>
+        </div>
+    </div>
+</div>

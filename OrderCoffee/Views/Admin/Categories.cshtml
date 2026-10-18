@@ -1,0 +1,16 @@
+@model List<Category>
+@{ ViewData["Title"] = "Danh mục"; }
+<div class="d-flex justify-content-between mb-3"><h3>Danh mục</h3><a asp-action="CategoryEdit" class="btn btn-coffee">+ Thêm danh mục</a></div>
+<table class="table bg-white align-middle">
+    <thead><tr><th>Icon</th><th>Tên</th><th>Thứ tự</th><th>Số món</th><th></th></tr></thead>
+    @foreach (var c in Model)
+    {
+        <tr>
+            <td class="fs-4">@c.Icon</td><td>@c.Name</td><td>@c.SortOrder</td><td>@c.Products.Count</td>
+            <td class="text-end">
+                <a asp-action="CategoryEdit" asp-route-id="@c.Id" class="btn btn-sm btn-outline-secondary">Sửa</a>
+                <form method="post" asp-action="CategoryDelete" asp-route-id="@c.Id" class="d-inline" onsubmit="return confirm('Xóa danh mục?')"><button class="btn btn-sm btn-outline-danger">Xóa</button></form>
+            </td>
+        </tr>
+    }
+</table>

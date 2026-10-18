@@ -1,0 +1,99 @@
+@model CheckoutVm
+@{
+    ViewData["Title"] = "Thanh toán";
+    var cart = (List<CartItem>)ViewBag.Cart;
+    int subTotal = ViewBag.SubTotal is int s ? s : cart.Sum(c => c.LineTotal);
+    var chk = ViewBag.Check as VoucherCheck;
+    var wallet = (List<UserVoucher>)ViewBag.Wallet;
+    var pub = (List<Voucher>)ViewBag.Public;
+    var discount = chk?.Ok == true ? chk.Discount : 0;
+    var addresses = (List<UserAddress>)ViewBag.Addresses;
+}
+<h3 class="mb-3">Thanh toán đơn hàng</h3>
+@if (!User.Identity!.IsAuthenticated)
+{
+    <div class="alert alert-info small">Bạn đặt hàng <b>không cần đăng ký</b>, chỉ cần nhập số điện thoại và địa chỉ giao hàng. <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="/Orders/Checkout">Đăng nhập</a> để tích điểm và dùng voucher.</div>
+}
+<form method="post" asp-action="Checkout">
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card p-3 mb-3">
+                <h5>🛵 Giao hàng tận nơi</h5>
+                @if (addresses.Any())
+                {
+                    <div class="small text-muted">Địa chỉ đã dùng — bấm để chọn:</div>
+                    <div class="d-flex flex-wrap gap-2 mb-3 mt-1">
+                        @foreach (var a in addresses)
+                        {
+                            <span class="voucher-chip" data-addr="@a.Address" data-phone="@a.Phone" data-name="@a.ContactName">📍 @a.Address <span class="text-muted">· @a.Phone</span></span>
+                        }
+                    </div>
+                }
+                <div class="row g-2">
+                    <div class="col-md-6"><label asp-for="Phone" class="form-label"></label><input asp-for="Phone" class="form-control" inputmode="tel" /><span asp-validation-for="Phone" class="text-danger"></span></div>
+                    <div class="col-md-6"><label asp-for="CustomerName" class="form-label"></label><input asp-for="CustomerName" class="form-control" /></div>
+                    <div class="col-12"><label asp-for="Address" class="form-label"></label><input asp-for="Address" class="form-control" placeholder="Số nhà, đường, phường, quận…" /><span asp-validation-for="Address" class="text-danger"></span></div>
+                    <div class="col-12"><label asp-for="Note" class="form-label"></label><input asp-for="Note" class="form-control" /></div>
+                </div>
+            </div>
+
+            <div class="card p-3 mb-3">
+                <h5>Thanh toán</h5>
+                <div class="form-check"><input class="form-check-input" type="radio" name="PaymentMethod" id="pm0" value="Cash" checked="@(Model.PaymentMethod == PaymentMethod.Cash)" /><label class="form-check-label" for="pm0">💵 Tiền mặt (trả khi nhận hàng)</label></div>
+                <div class="form-check"><input class="form-check-input" type="radio" name="PaymentMethod" id="pm1" value="BankTransfer" checked="@(Model.PaymentMethod == PaymentMethod.BankTransfer)" /><label class="form-check-label" for="pm1">🏦 Chuyển khoản (hiện thông tin sau khi đặt, quán xác nhận thủ công)</label></div>
+            </div>
+
+            <div class="card p-3">
+                <h5>Mã khuyến mãi</h5>
+                @if (!User.Identity!.IsAuthenticated) { <div class="small text-muted mb-2">Voucher chỉ áp dụng cho khách đã đăng nhập.</div> }
+                <div class="input-group mb-2">
+                    <input asp-for="VoucherCode" class="form-control text-uppercase" placeholder="Nhập mã voucher" />
+                    <button class="btn btn-outline-coffee" name="action" value="preview" formnovalidate>Áp dụng</button>
+                </div>
+                <span asp-validation-for="VoucherCode" class="text-danger"></span>
+                @if (chk?.Ok == true) { <div class="text-success small mb-2">✔ @chk.Voucher!.Name — giảm @Fmt.Money(chk.Discount)</div> }
+                @if (wallet.Any())
+                {
+                    <div class="small text-muted mt-2">Voucher trong ví của bạn:</div>
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                        @foreach (var w in wallet) { <span class="voucher-chip" data-voucher-code="@w.Voucher!.Code"><b>@w.Voucher.Code</b> · @w.Voucher.DisplayValue</span> }
+                    </div>
+                }
+                @if (pub.Any())
+                {
+                    <div class="small text-muted mt-2">Mã đang chạy:</div>
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                        @foreach (var v in pub) { <span class="voucher-chip" data-voucher-code="@v.Code"><b>@v.Code</b> · @v.DisplayValue</span> }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card p-3">
+                <h5>Đơn hàng của bạn</h5>
+                @foreach (var c in cart)
+                {
+                    <div class="d-flex justify-content-between small py-1"><span>@c.Quantity × @c.Name @(c.Note != null ? $"({c.Note})" : "")</span><span>@Fmt.Money(c.LineTotal)</span></div>
+                }
+                <hr />
+                <div class="d-flex justify-content-between"><span>Tạm tính</span><span>@Fmt.Money(subTotal)</span></div>
+                <div class="d-flex justify-content-between text-success"><span>Giảm giá</span><span>-@Fmt.Money(discount)</span></div>
+                <hr />
+                <div class="d-flex justify-content-between fs-5"><b>Tổng cộng</b><b class="price">@Fmt.Money(subTotal - discount)</b></div>
+                @if (User.IsInRole(Roles.Customer)) { <div class="small text-muted mb-3">Bạn sẽ nhận khoảng @((subTotal - discount) / PromotionService.MoneyPerPoint) điểm khi đơn hoàn thành.</div> }
+                <button class="btn btn-coffee btn-lg w-100" name="action" value="place">Đặt hàng</button>
+            </div>
+        </div>
+    </div>
+</form>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.querySelectorAll('[data-addr]').forEach(el => el.addEventListener('click', () => {
+            document.getElementById('Address').value = el.dataset.addr;
+            document.getElementById('Phone').value = el.dataset.phone;
+            if (el.dataset.name) document.getElementById('CustomerName').value = el.dataset.name;
+        }));
+    </script>
+}

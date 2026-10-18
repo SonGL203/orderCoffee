@@ -1,0 +1,15 @@
+@model Product
+@{ ViewData["Title"] = Model.Id == 0 ? "Thêm món" : "Sửa món"; var cats = (List<Category>)ViewBag.Categories; }
+<h3 class="mb-3">@ViewData["Title"]</h3>
+<form method="post" class="card p-3" style="max-width:560px">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3"><label asp-for="CategoryId" class="form-label">Danh mục</label>
+        <select asp-for="CategoryId" class="form-select" asp-items="@(new SelectList(cats, "Id", "Name", Model.CategoryId))"></select></div>
+    <div class="mb-3"><label asp-for="Name" class="form-label">Tên món</label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="Description" class="form-label">Mô tả</label><input asp-for="Description" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="Price" class="form-label">Giá (đ)</label><input asp-for="Price" class="form-control" /><span asp-validation-for="Price" class="text-danger"></span></div>
+    <div class="form-check mb-3"><input asp-for="IsAvailable" class="form-check-input" /><label asp-for="IsAvailable" class="form-check-label">Đang bán</label></div>
+    <div><button class="btn btn-coffee">Lưu</button> <a asp-action="Products" class="btn btn-link">Hủy</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

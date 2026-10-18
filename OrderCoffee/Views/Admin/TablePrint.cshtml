@@ -1,0 +1,16 @@
+@model List<CafeTable>
+@{ ViewData["Title"] = "In QR bàn"; var urls = (Dictionary<int, string>)ViewBag.Urls; }
+<button class="btn btn-coffee mb-3 no-print" onclick="window.print()">🖨 In</button>
+<div class="row row-cols-2 row-cols-md-3 g-4">
+    @foreach (var t in Model)
+    {
+        <div class="col qr-card">
+            <div class="border rounded p-3 text-center bg-white">
+                <h4>☕ Order Coffee</h4>
+                <img src="@Url.Action("TableQr", new { id = t.Id })" class="img-fluid" style="max-width:220px" alt="QR" />
+                <h3 class="mt-2">@t.Name</h3>
+                <div class="small">Quét mã để gọi món</div>
+            </div>
+        </div>
+    }
+</div>

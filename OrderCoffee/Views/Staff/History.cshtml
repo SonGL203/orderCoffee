@@ -1,0 +1,18 @@
+@model List<Order>
+@{ ViewData["Title"] = "Lịch sử đơn"; }
+<h3 class="mb-3">Lịch sử đơn (100 đơn gần nhất)</h3>
+<table class="table table-sm table-hover bg-white">
+    <thead><tr><th>#</th><th>Thời gian</th><th>Loại</th><th>Khách</th><th>Thanh toán</th><th>Trạng thái</th><th class="text-end">Tổng</th></tr></thead>
+    @foreach (var o in Model)
+    {
+        <tr>
+            <td><a asp-action="OrderDetail" asp-route-id="@o.Id">#@o.Id</a></td>
+            <td>@o.UpdatedAt.ToString("dd/MM HH:mm")</td>
+            <td>@(o.Type == OrderType.Online ? "Online" : o.Table?.Name ?? "Tại bàn")</td>
+            <td>@(o.User?.FullName ?? o.CustomerName ?? "Vãng lai")</td>
+            <td>@(o.PaymentStatus == PaymentStatus.Paid ? Fmt.Payment(o.PaymentMethod) : "—")</td>
+            <td><span class="badge text-bg-@Fmt.StatusColor(o.Status)">@Fmt.Status(o.Status)</span></td>
+            <td class="text-end">@Fmt.Money(o.Total)</td>
+        </tr>
+    }
+</table>

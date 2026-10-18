@@ -1,0 +1,35 @@
+@{
+    ViewData["Title"] = "Sơ đồ bàn";
+    var tables = (List<CafeTable>)ViewBag.Tables;
+    var openOrders = (Dictionary<int, Order>)ViewBag.OpenOrders;
+}
+<div data-autorefresh="10"></div>
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h3 class="mb-0">Sơ đồ bàn</h3>
+    <a asp-action="Online" class="btn @((int)ViewBag.PendingOnline > 0 ? "btn-danger" : "btn-outline-coffee")">
+        Đơn online @if ((int)ViewBag.PendingOnline > 0) { <span class="badge bg-light text-danger">@ViewBag.PendingOnline chờ xác nhận</span> } else { <span>(@ViewBag.ActiveOnline đang xử lý)</span> }
+    </a>
+</div>
+<div class="mb-3 small">
+    <span class="badge text-bg-success">Trống</span> <span class="badge text-bg-primary">Có khách</span> <span class="badge" style="background:#d99a1e">Chờ thanh toán</span>
+    <span class="text-muted ms-2">Tự làm mới mỗi 10 giây</span>
+</div>
+<div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+    @foreach (var t in tables)
+    {
+        openOrders.TryGetValue(t.Id, out var order);
+        var unserved = order?.Items.Where(i => !i.IsServed).Sum(i => i.Quantity) ?? 0;
+        <div class="col">
+            <a asp-action="Table" asp-route-id="@t.Id" class="table-tile @t.Status.ToString().ToLower()">
+                <div class="tb-name">@t.Name</div>
+                <div>@Fmt.Table(t.Status)</div>
+                @if (order != null)
+                {
+                    <div class="mt-2 fw-bold">@Fmt.Money(order.Total)</div>
+                    @if (unserved > 0) { <span class="badge bg-danger">🔔 @unserved món chờ mang ra</span> }
+                    else { <span class="badge bg-light text-dark">✅ Đã ra món</span> }
+                }
+            </a>
+        </div>
+    }
+</div>
