@@ -63,14 +63,21 @@ else
         </div>
         @if (Model.PaymentMethod == PaymentMethod.BankTransfer && Model.PaymentStatus == PaymentStatus.Unpaid && Model.Status != OrderStatus.Cancelled)
         {
-            <div class="card p-3 mb-3 border-warning">
-                <h6>Thông tin chuyển khoản</h6>
-                <div>Ngân hàng: <b>@bank["BankName"]</b></div>
-                <div>Số TK: <b>@bank["BankAccount"]</b></div>
-                <div>Chủ TK: <b>@bank["BankOwner"]</b></div>
-                <div>Số tiền: <b class="price">@Fmt.Money(Model.Total)</b></div>
-                <div>Nội dung: <b>DON @Model.Id</b></div>
-                <small class="text-muted">Quán sẽ xác nhận khi nhận được tiền.</small>
+            var qrUrl = $"https://qr.sepay.vn/img?acc={bank["BankAccount"]}&bank={bank["BankName"]}&amount={Model.Total}&des=DON+{Model.Id}&template=compact";
+            <div class="card p-3 mb-3 border-warning text-center">
+                <h6 class="text-warning fw-bold mb-2">⚡ Quét mã VietQR để thanh toán tự động</h6>
+                <div class="my-2">
+                    <img src="@qrUrl" alt="VietQR SePay" class="img-fluid rounded border shadow-sm" style="max-width: 240px;" />
+                </div>
+                <div class="small text-muted mb-2">Mở app ngân hàng bất kỳ để quét mã</div>
+                <div class="text-start bg-light p-2 rounded small">
+                    <div>Ngân hàng: <b>@bank["BankName"]</b></div>
+                    <div>Số TK: <b>@bank["BankAccount"]</b></div>
+                    <div>Chủ TK: <b>@bank["BankOwner"]</b></div>
+                    <div>Số tiền: <b class="price">@Fmt.Money(Model.Total)</b></div>
+                    <div>Nội dung CK: <b class="text-danger">DON @Model.Id</b></div>
+                </div>
+                <small class="text-success mt-2">✨ Hệ thống sẽ tự động xác nhận đơn ngay khi bạn chuyển tiền thành công!</small>
             </div>
         }
         <div class="d-flex gap-2">
