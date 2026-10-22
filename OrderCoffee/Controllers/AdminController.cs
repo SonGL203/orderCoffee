@@ -109,9 +109,13 @@ public class AdminController(AppDbContext db, IConfiguration config) : Controlle
     }
 
     // ---------- Bàn + QR ----------
-    public async Task<IActionResult> Tables()
+    public async Task<IActionResult> Tables(string? mode)
     {
-        ViewBag.BaseUrl = BaseUrl;
+        ViewBag.Mode = mode;
+        ViewBag.BaseUrl = BaseUrl(mode);
+        ViewBag.IsFixed = config["Shop:PublicBaseUrl"] is { Length: > 0 };
+        ViewBag.HostName = LanAddress.HostName();
+        ViewBag.Candidates = LanAddress.Candidates();
         return View(await db.Tables.OrderBy(t => t.Id).ToListAsync());
     }
 
@@ -144,26 +148,36 @@ public class AdminController(AppDbContext db, IConfiguration config) : Controlle
         return RedirectToAction(nameof(Tables));
     }
 
-    public async Task<IActionResult> TableQr(int id)
+    public async Task<IActionResult> TableQr(int id, string? mode)
     {
         var t = await db.Tables.FindAsync(id);
         if (t == null) return NotFound();
         using var gen = new QRCodeGenerator();
-        using var data = gen.CreateQrCode(TableUrl(t), QRCodeGenerator.ECCLevel.M);
+        using var data = gen.CreateQrCode(TableUrl(t, mode), QRCodeGenerator.ECCLevel.M);
         return File(new PngByteQRCode(data).GetGraphic(12), "image/png");
     }
 
     // Trang in QR dán lên bàn
-    public async Task<IActionResult> TablePrint()
+    public async Task<IActionResult> TablePrint(string? mode)
     {
-        ViewBag.Urls = (await db.Tables.ToListAsync()).ToDictionary(t => t.Id, TableUrl);
+        ViewBag.Mode = mode;
+        ViewBag.Urls = (await db.Tables.ToListAsync()).ToDictionary(t => t.Id, t => TableUrl(t, mode));
         return View(await db.Tables.OrderBy(t => t.Id).ToListAsync());
     }
 
-    // Địa chỉ gốc trong QR: ưu tiên Shop:PublicBaseUrl (IP LAN / domain) để điện thoại truy cập được
-    private string BaseUrl => (config["Shop:PublicBaseUrl"] is { Length: > 0 } u ? u : $"{Request.Scheme}://{Request.Host}").TrimEnd('/');
+    // Địa chỉ gốc trong QR, theo thứ tự ưu tiên:
+    //  1) Shop:PublicBaseUrl nếu có (domain / tunnel cố định)
+    //  2) mode=host -> tên máy (songiang.local), không đổi khi đổi Wi-Fi
+    //  3) mặc định -> IP LAN hiện tại của máy, tự nhận mỗi lần mở trang (đổi Wi-Fi chỉ cần tải lại)
+    private string BaseUrl(string? mode)
+    {
+        if (config["Shop:PublicBaseUrl"] is { Length: > 0 } fixedUrl) return fixedUrl.TrimEnd('/');
+        var port = config.GetValue("Shop:LanPort", 5190);
+        var host = mode == "host" ? LanAddress.HostName() : LanAddress.CurrentIp() ?? Request.Host.Host;
+        return $"http://{host}:{port}";
+    }
 
-    private string TableUrl(CafeTable t) => $"{BaseUrl}/t/{t.Code}";
+    private string TableUrl(CafeTable t, string? mode) => $"{BaseUrl(mode)}/t/{t.Code}";
 
     // ---------- Voucher ----------
     public async Task<IActionResult> Vouchers() => View(await db.Vouchers.OrderByDescending(v => v.Id).ToListAsync());

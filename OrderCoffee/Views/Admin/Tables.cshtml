@@ -1,13 +1,52 @@
 @model List<CafeTable>
-@{ ViewData["Title"] = "Bàn & QR"; }
+@{
+    ViewData["Title"] = "Bàn & QR";
+    var mode = (string?)ViewBag.Mode;
+    var candidates = (List<LanAddress.Candidate>)ViewBag.Candidates;
+}
 <div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
     <h3>Bàn &amp; mã QR</h3>
     <div class="d-flex gap-2">
-        <a asp-action="TablePrint" class="btn btn-outline-coffee" target="_blank">🖨 In tất cả QR</a>
+        <a asp-action="TablePrint" asp-route-mode="@mode" class="btn btn-outline-coffee" target="_blank">🖨 In tất cả QR</a>
         <form method="post" asp-action="TableAdd" class="input-group"><input name="name" class="form-control" placeholder="Tên bàn mới" required /><button class="btn btn-coffee">Thêm</button></form>
     </div>
 </div>
-<div class="alert alert-info small">Mã QR trỏ tới <code>@ViewBag.BaseUrl/t/&lt;mã bàn&gt;</code>. Muốn điện thoại quét được, đặt <code>Shop:PublicBaseUrl</code> trong appsettings.json thành IP máy tính (vd. http://192.168.1.29:5190), chạy app bằng profile <b>lan</b> rồi tải lại trang này.</div>
+<div class="card p-3 mb-3">
+    <div class="d-flex justify-content-between flex-wrap gap-2 align-items-start">
+        <div>
+            <div class="small text-muted">Mã QR đang trỏ tới</div>
+            <div class="fs-5"><code>@ViewBag.BaseUrl/t/&lt;mã bàn&gt;</code></div>
+        </div>
+        @if (!(bool)ViewBag.IsFixed)
+        {
+            <div class="btn-group btn-group-sm">
+                <a class="btn @(mode != "host" ? "btn-coffee" : "btn-outline-coffee")" asp-action="Tables">Theo IP hiện tại</a>
+                <a class="btn @(mode == "host" ? "btn-coffee" : "btn-outline-coffee")" asp-action="Tables" asp-route-mode="host">Theo tên máy (@ViewBag.HostName)</a>
+            </div>
+        }
+    </div>
+    @if ((bool)ViewBag.IsFixed)
+    {
+        <div class="small text-success mt-2">✔ Đang dùng địa chỉ cố định trong <code>Shop:PublicBaseUrl</code> nên QR không đổi khi đổi mạng.</div>
+    }
+    else
+    {
+        <div class="small text-muted mt-2">
+            <b>Theo IP hiện tại</b> (khuyên dùng): tự nhận IP Wi-Fi/dây của máy mỗi lần mở trang này. <b>Đổi Wi-Fi thì IP đổi, hãy tải lại trang và in lại QR.</b><br />
+            <b>Theo tên máy</b>: QR không đổi khi đổi mạng, nhưng một số điện thoại Android không mở được địa chỉ <code>.local</code> &mdash; hãy thử quét thật trước khi in.<br />
+            Muốn QR không bao giờ đổi: đặt <code>Shop:PublicBaseUrl</code> thành domain / tunnel cố định.
+        </div>
+        @if (!candidates.Any())
+        {
+            <div class="alert alert-warning small mt-2 mb-0">Máy chưa nối mạng nào (Wi-Fi / dây), điện thoại sẽ không vào được. Hãy nối mạng rồi tải lại trang.</div>
+        }
+        else
+        {
+            <div class="small mt-1">Mạng máy đang dùng: @string.Join(" · ", candidates.Select(c => $"{c.Name} {c.Ip}"))</div>
+        }
+    }
+    <div class="small text-muted mt-1">Điện thoại phải cùng mạng với máy tính, và app phải chạy bằng profile <b>lan</b> (<code>http://0.0.0.0:5190</code>).</div>
+</div>
 <div class="row row-cols-2 row-cols-md-4 g-3">
     @foreach (var t in Model)
     {
@@ -15,7 +54,7 @@
             <div class="card p-3 text-center h-100">
                 <b>@t.Name</b>
                 <span class="badge text-bg-@Fmt.TableColor(t.Status) mx-auto mb-2">@Fmt.Table(t.Status)</span>
-                <a href="/t/@t.Code" target="_blank"><img src="@Url.Action("TableQr", new { id = t.Id })" class="img-fluid" alt="QR @t.Name" /></a>
+                <a href="/t/@t.Code" target="_blank"><img src="@Url.Action("TableQr", new { id = t.Id, mode })" class="img-fluid" alt="QR @t.Name" /></a>
                 <small class="text-muted">/t/@t.Code</small>
                 <div class="d-flex gap-1 justify-content-center mt-2">
                     <form method="post" asp-action="TableRegenCode" asp-route-id="@t.Id" onsubmit="return confirm('Đổi mã sẽ làm QR cũ hết hiệu lực. Tiếp tục?')"><button class="btn btn-sm btn-outline-secondary">Đổi mã</button></form>
