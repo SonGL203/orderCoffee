@@ -1,0 +1,25 @@
+@model List<Review>
+@{
+    ViewData["Title"] = "Đánh giá & yêu thích";
+    var stats = (List<ReviewStatVm>)ViewBag.Stats;
+}
+<h3 class="mb-3">⭐ Đánh giá &amp; món yêu thích</h3>
+<table class="table bg-white align-middle">
+    <thead><tr><th>Món</th><th>♥ Yêu thích</th><th>Điểm TB</th><th>Số đánh giá</th></tr></thead>
+    @foreach (var s in stats)
+    {
+        <tr><td><b>@s.Name</b></td><td>@s.Favorites</td><td>@(s.Count == 0 ? "—" : "★ " + s.Avg.ToString("0.0"))</td><td>@s.Count</td></tr>
+    }
+</table>
+<h5 class="mt-4">Nhận xét gần đây</h5>
+@if (!Model.Any()) { <p class="text-muted">Chưa có đánh giá nào.</p> }
+<div class="vstack gap-2">
+    @foreach (var r in Model)
+    {
+        <div class="card p-3">
+            <div><b>@r.Product?.Name</b> <span class="text-warning">@(new string('★', r.Rating))<span class="text-muted">@(new string('★', 5 - r.Rating))</span></span></div>
+            @if (r.Comment != null) { <div>“@r.Comment”</div> }
+            <div class="small text-muted">@r.ReviewerName · @r.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+    }
+</div>

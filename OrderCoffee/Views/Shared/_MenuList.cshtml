@@ -7,6 +7,9 @@
     var basePath = table != null ? $"/t/{table.Code}/menu" : "/menu";
     var cartCount = Context.Session.GetCart().Sum(c => c.Quantity);
     var cartTotal = Context.Session.GetCart().Sum(c => c.LineTotal);
+    var ratings = (Dictionary<int, (double Avg, int Count)>)ViewBag.Ratings;
+    var favIds = (HashSet<int>)ViewBag.FavIds;
+    bool canFav = ViewBag.CanFav;
 }
 
 <form method="get" action="@basePath" class="row g-2 mb-3">
@@ -34,9 +37,15 @@
     {
         <div class="col">
             <div class="card product-card h-100 @(p.IsAvailable ? "" : "sold-out")">
-                <div class="emoji">@p.Category?.Icon</div>
+                <div class="emoji position-relative">@p.Category?.Icon
+                    @if (canFav)
+                    {
+                        <button type="button" class="fav-btn @(favIds.Contains(p.Id) ? "on" : "")" data-fav="@p.Id" title="Yêu thích">♥</button>
+                    }
+                </div>
                 <div class="card-body d-flex flex-column">
                     <h6 class="mb-1">@p.Name</h6>
+                    @if (ratings.TryGetValue(p.Id, out var rt)) { <div class="small text-warning">★ @rt.Avg.ToString("0.0") <span class="text-muted">(@rt.Count)</span></div> }
                     <small class="text-muted flex-grow-1">@p.Description</small>
                     <div class="d-flex justify-content-between align-items-center mt-2">
                         <span class="price">@Fmt.Money(p.Price)</span>

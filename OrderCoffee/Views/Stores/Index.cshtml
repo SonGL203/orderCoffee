@@ -1,0 +1,85 @@
+@model List<Store>
+@{
+    ViewData["Title"] = "Cửa hàng gần nhất";
+}
+
+<h3 class="mb-1">📍 Cửa hàng gần nhất</h3>
+<p class="text-muted">Cho phép truy cập vị trí để xem cửa hàng gần bạn nhất, hoặc lọc theo thành phố.</p>
+
+<div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+    <button type="button" id="btn-locate" class="btn btn-coffee">📍 Tìm cửa hàng gần tôi</button>
+    <select id="city-filter" class="form-select w-auto">
+        <option value="">Tất cả thành phố</option>
+        @foreach (var c in Model.Select(s => s.City).Distinct())
+        {
+            <option value="@c">@c</option>
+        }
+    </select>
+    <span id="locate-status" class="small text-muted"></span>
+    @if (User.IsInRole(Roles.Admin))
+    {
+        <form asp-controller="Stores" asp-action="Sync" method="post" class="ms-auto">
+            <button class="btn btn-outline-secondary btn-sm" onclick="this.disabled=true;this.form.submit();this.textContent='Đang đồng bộ...'">🔄 Đồng bộ từ bản đồ</button>
+        </form>
+    }
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Đang tìm cửa hàng trên bản đồ, vui lòng tải lại trang sau ít phút.</div>
+}
+<div class="row g-3" id="store-list">
+    @foreach (var s in Model)
+    {
+        <div class="col-md-6 store-item" data-city="@s.City" data-lat="@s.Lat.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-lng="@s.Lng.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+            <div class="card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-start">
+                    <b>☕ @s.Name</b>
+                    <span class="badge text-bg-warning store-distance d-none"></span>
+                </div>
+                <div>@s.Address</div>
+                <div class="mt-2 d-flex gap-2">
+                    <a class="btn btn-sm btn-outline-coffee" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=@s.Lat.ToString(System.Globalization.CultureInfo.InvariantCulture),@s.Lng.ToString(System.Globalization.CultureInfo.InvariantCulture)">Chỉ đường</a>
+                    <a class="btn btn-sm btn-coffee" href="/menu">Đặt món</a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    const list = document.getElementById('store-list');
+    const status = document.getElementById('locate-status');
+    const items = [...list.querySelectorAll('.store-item')];
+    const rad = d => d * Math.PI / 180;
+    const dist = (a, b, c, d) => {
+        const x = rad(c - a), y = rad(d - b);
+        const h = Math.sin(x / 2) ** 2 + Math.cos(rad(a)) * Math.cos(rad(c)) * Math.sin(y / 2) ** 2;
+        return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+    };
+    document.getElementById('city-filter').addEventListener('change', e => {
+        items.forEach(i => i.classList.toggle('d-none', !!e.target.value && i.dataset.city !== e.target.value));
+    });
+    document.getElementById('btn-locate').addEventListener('click', () => {
+        if (!window.isSecureContext) { status.textContent = 'Trình duyệt chỉ cho định vị trên HTTPS hoặc localhost. Bạn đang mở bằng địa chỉ HTTP thường nên bị chặn — hãy chọn thành phố bên cạnh.'; return; }
+        if (!navigator.geolocation) { status.textContent = 'Trình duyệt không hỗ trợ định vị.'; return; }
+        status.textContent = 'Đang xác định vị trí...';
+        navigator.geolocation.getCurrentPosition(p => {
+            items.forEach(i => {
+                i._d = dist(p.coords.latitude, p.coords.longitude, +i.dataset.lat, +i.dataset.lng);
+                const b = i.querySelector('.store-distance');
+                b.textContent = i._d < 1 ? Math.round(i._d * 1000) + ' m' : i._d.toFixed(1) + ' km';
+                b.classList.remove('d-none');
+            });
+            items.sort((a, b) => a._d - b._d).forEach(i => list.appendChild(i));
+            status.textContent = 'Đã sắp xếp theo khoảng cách từ vị trí của bạn.';
+        }, err => { status.textContent = err.code === 1
+            ? 'Bạn đã chặn quyền vị trí. Bấm biểu tượng ổ khóa cạnh thanh địa chỉ → Vị trí → Cho phép, rồi tải lại trang.'
+            : 'Không xác định được vị trí (bật định vị của thiết bị rồi thử lại), hoặc chọn thành phố.'; },
+        { enableHighAccuracy: true, timeout: 10000 });
+    });
+})();
+</script>
+}

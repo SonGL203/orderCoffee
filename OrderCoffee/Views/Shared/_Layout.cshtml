@@ -54,6 +54,7 @@
                                     <li><a class="dropdown-item" asp-controller="Admin" asp-action="Categories">Danh mục</a></li>
                                     <li><a class="dropdown-item" asp-controller="Admin" asp-action="Tables">Bàn &amp; QR</a></li>
                                     <li><a class="dropdown-item" asp-controller="Admin" asp-action="Vouchers">Voucher</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Reviews">Đánh giá &amp; yêu thích</a></li>
                                     <li><a class="dropdown-item" asp-controller="Admin" asp-action="Users">Tài khoản</a></li>
                                 </ul>
                             </li>
@@ -63,11 +64,13 @@
                     {
                         <li class="nav-item"><a class="nav-link" href="/t/@tableCode/menu">Thực đơn</a></li>
                         <li class="nav-item"><a class="nav-link" href="/t/@tableCode/bill">Hóa đơn bàn</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/stores">Cửa hàng</a></li>
                     }
                     else
                     {
                         <li class="nav-item"><a class="nav-link" href="/">Trang chủ</a></li>
                         <li class="nav-item"><a class="nav-link" href="/menu">Thực đơn</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/stores">Cửa hàng gần nhất</a></li>
                         @if (User.IsInRole(Roles.Customer))
                         {
                             <li class="nav-item"><a class="nav-link" asp-controller="Orders" asp-action="Index">Đơn của tôi</a></li>
@@ -94,6 +97,7 @@
                                 {
                                     <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile">Điểm &amp; voucher</a></li>
                                     <li><a class="dropdown-item" asp-controller="Orders" asp-action="Index">Đơn của tôi</a></li>
+                                    <li><a class="dropdown-item" href="/favorites">♥ Món yêu thích</a></li>
                                     <li><hr class="dropdown-divider" /></li>
                                 }
                                 <li>

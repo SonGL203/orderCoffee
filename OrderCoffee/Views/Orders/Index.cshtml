@@ -5,7 +5,8 @@
 <div class="vstack gap-2">
     @foreach (var o in Model)
     {
-        <a asp-action="Details" asp-route-code="@o.Code" class="card p-3 text-decoration-none text-reset">
+        <div class="card p-3">
+        <a asp-action="Details" asp-route-code="@o.Code" class="text-decoration-none text-reset">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <b>#@o.Id</b> · <small class="text-muted">@o.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
@@ -18,5 +19,7 @@
                 </div>
             </div>
         </a>
+        <form method="post" asp-action="Reorder" asp-route-code="@o.Code" class="mt-2"><button class="btn btn-sm btn-outline-coffee">🔁 Đặt lại đơn này</button></form>
+        </div>
     }
 </div>

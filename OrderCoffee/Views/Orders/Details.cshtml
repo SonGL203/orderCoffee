@@ -34,6 +34,7 @@ else
     </div>
 }
 
+@{ var reviewed = (Dictionary<int, Review>)ViewBag.Reviewed; bool canReview = ViewBag.CanReview; }
 <div class="row g-3">
     <div class="col-lg-7">
         <div class="card p-3">
@@ -48,6 +49,38 @@ else
             <div class="d-flex justify-content-between mt-2"><span>Tạm tính</span><span>@Fmt.Money(Model.SubTotal)</span></div>
             @if (Model.Discount > 0) { <div class="d-flex justify-content-between text-success"><span>Voucher @Model.Voucher?.Code</span><span>-@Fmt.Money(Model.Discount)</span></div> }
             <div class="d-flex justify-content-between fs-5"><b>Tổng</b><b class="price">@Fmt.Money(Model.Total)</b></div>
+            @if (canReview)
+            {
+                <hr />
+                <h5>⭐ Đánh giá món</h5>
+                @foreach (var i in Model.Items.GroupBy(x => x.ProductId).Select(g => g.First()))
+                {
+                    <div class="py-2 border-bottom">
+                        <b>@i.ProductName</b>
+                        @if (reviewed.TryGetValue(i.ProductId, out var rv))
+                        {
+                            <div class="text-warning">@(new string('★', rv.Rating))<span class="text-muted">@(new string('★', 5 - rv.Rating))</span></div>
+                            @if (rv.Comment != null) { <div class="small text-muted">“@rv.Comment”</div> }
+                        }
+                        else
+                        {
+                            <form method="post" asp-action="Review" asp-route-code="@Model.Code">
+                                <input type="hidden" name="productId" value="@i.ProductId" />
+                                <div class="star-input">
+                                    @for (var s = 5; s >= 1; s--)
+                                    {
+                                        <input type="radio" name="rating" id="st-@i.ProductId-@s" value="@s" required /><label for="st-@i.ProductId-@s">★</label>
+                                    }
+                                </div>
+                                <div class="input-group input-group-sm mt-1">
+                                    <input name="comment" maxlength="500" class="form-control" placeholder="Nhận xét (không bắt buộc)" />
+                                    <button class="btn btn-coffee">Gửi</button>
+                                </div>
+                            </form>
+                        }
+                    </div>
+                }
+            }
             @if (Model.PointsEarned > 0) { <div class="text-success small mt-1">🎁 Bạn đã nhận +@Model.PointsEarned điểm từ đơn này</div> }
         </div>
     </div>

@@ -96,3 +96,13 @@ document.querySelectorAll('[data-voucher-code]').forEach(el => el.addEventListen
         }, 30000);
     }
 })();
+
+// ===== Yêu thích món (♥) =====
+document.querySelectorAll('[data-fav]').forEach(btn => btn.addEventListener('click', async () => {
+    const body = new URLSearchParams({ productId: btn.dataset.fav, __RequestVerificationToken: afToken() });
+    const res = await fetch('/favorites/toggle', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body });
+    if (!res.ok) { showToast('Không lưu được món yêu thích.'); return; }
+    const d = await res.json();
+    btn.classList.toggle('on', d.fav);
+    showToast(d.fav ? 'Đã thêm vào món yêu thích' : 'Đã bỏ khỏi món yêu thích');
+}));

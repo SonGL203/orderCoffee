@@ -8,6 +8,7 @@
     <h1 class="fw-bold">Cà phê ngon, giao tận nơi ☕</h1>
     <p class="lead mb-4">Đặt online lấy tại quán hoặc giao hàng. Tích điểm mỗi đơn, đổi voucher thoải mái.</p>
     <a href="/menu" class="btn btn-warning btn-lg me-2">Đặt món ngay</a>
+    <a href="/stores" class="btn btn-outline-light btn-lg me-2">📍 Cửa hàng gần nhất</a>
     @if (User.Identity?.IsAuthenticated != true)
     {
         <a asp-controller="Account" asp-action="Register" class="btn btn-outline-light btn-lg">Đăng ký nhận ưu đãi</a>
@@ -20,11 +21,12 @@
     <div class="col-md-4"><div class="card p-3 h-100"><div class="fs-1">🎁</div><b>Tích điểm đổi quà</b><small class="text-muted">10.000đ = 1 điểm. Đổi điểm lấy voucher giảm giá.</small></div></div>
 </div>
 
-<h4 class="mb-3">Món nổi bật</h4>
+@{ var ratings = (Dictionary<int, (double Avg, int Count)>)ViewBag.Ratings; }
+<h4 class="mb-3">⭐ Món được đề xuất</h4>
 <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
     @foreach (var p in featured)
     {
-        <div class="col"><a href="/menu" class="text-decoration-none text-reset"><div class="card h-100 p-3 text-center"><b>@p.Name</b><span class="price">@Fmt.Money(p.Price)</span></div></a></div>
+        <div class="col"><a href="/menu" class="text-decoration-none text-reset"><div class="card h-100 p-3 text-center"><b>@p.Name</b>@if (ratings.TryGetValue(p.Id, out var rt)) { <div class="small text-warning">★ @rt.Avg.ToString("0.0") <span class="text-muted">(@rt.Count)</span></div> }<span class="price">@Fmt.Money(p.Price)</span></div></a></div>
     }
 </div>
 
