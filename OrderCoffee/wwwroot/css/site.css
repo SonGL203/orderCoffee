@@ -49,3 +49,10 @@ body { background: var(--cream); color: #2b2118; }
 @media (max-width: 575.98px) {
     .alert-menu { position: fixed !important; top: 62px !important; left: 8px !important; right: 8px !important; width: auto; max-width: none; transform: none !important; inset-inline: 8px !important; }
 }
+
+.fav-btn { position: absolute; top: .4rem; right: .6rem; border: 0; background: #fff; border-radius: 50%; width: 2rem; height: 2rem; font-size: 1.1rem; line-height: 1; color: #bbb; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.fav-btn.on { color: #e0245e; }
+.star-input { display: inline-flex; flex-direction: row-reverse; gap: .1rem; }
+.star-input input { display: none; }
+.star-input label { font-size: 1.6rem; color: #ccc; cursor: pointer; line-height: 1; }
+.star-input input:checked ~ label, .star-input label:hover, .star-input label:hover ~ label { color: #f5a623; }

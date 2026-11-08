@@ -16,6 +16,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, EventHub hub) 
     public DbSet<UserVoucher> UserVouchers => Set<UserVoucher>();
     public DbSet<PointTransaction> PointTransactions => Set<PointTransaction>();
     public DbSet<UserAddress> UserAddresses => Set<UserAddress>();
+    public DbSet<Store> Stores => Set<Store>();
+    public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<FavoriteProduct> Favorites => Set<FavoriteProduct>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -23,6 +26,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, EventHub hub) 
         b.Entity<User>().HasIndex(u => u.Email).IsUnique();
         b.Entity<CafeTable>().HasIndex(t => t.Code).IsUnique();
         b.Entity<Voucher>().HasIndex(v => v.Code).IsUnique();
+        b.Entity<Store>().HasIndex(s => s.OsmKey).IsUnique();
+        b.Entity<Review>().HasIndex(r => new { r.OrderId, r.ProductId }).IsUnique();
+        b.Entity<Review>().HasOne(r => r.Order).WithMany().HasForeignKey(r => r.OrderId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<Review>().HasOne(r => r.Product).WithMany().HasForeignKey(r => r.ProductId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<FavoriteProduct>().HasIndex(f => new { f.UserId, f.ProductId }).IsUnique();
+        b.Entity<FavoriteProduct>().HasOne(f => f.Product).WithMany().HasForeignKey(f => f.ProductId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<FavoriteProduct>().HasOne<User>().WithMany().HasForeignKey(f => f.UserId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<Order>().HasIndex(o => o.Code).IsUnique();
         b.Entity<UserAddress>().HasIndex(a => new { a.UserId, a.Phone, a.Address }).IsUnique();
         b.Entity<UserAddress>().HasOne<User>().WithMany().HasForeignKey(a => a.UserId).OnDelete(DeleteBehavior.Cascade);

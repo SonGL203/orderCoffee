@@ -12,6 +12,20 @@ namespace OrderCoffee.Controllers;
 [Authorize(Roles = Roles.Admin)]
 public class AdminController(AppDbContext db, IConfiguration config) : Controller
 {
+    // ---------- Đánh giá & món yêu thích ----------
+    public async Task<IActionResult> Reviews()
+    {
+        var stats = await db.Products.Select(p => new ReviewStatVm
+        {
+            Name = p.Name,
+            Count = db.Reviews.Count(r => r.ProductId == p.Id),
+            Avg = db.Reviews.Where(r => r.ProductId == p.Id).Average(r => (double?)r.Rating) ?? 0,
+            Favorites = db.Favorites.Count(f => f.ProductId == p.Id)
+        }).ToListAsync();
+        ViewBag.Stats = stats.OrderByDescending(s => s.Favorites).ThenByDescending(s => s.Avg).ThenByDescending(s => s.Count).ToList();
+        return View(await db.Reviews.Include(r => r.Product).OrderByDescending(r => r.Id).Take(50).ToListAsync());
+    }
+
     // ---------- Báo cáo ----------
     public async Task<IActionResult> Index(DateTime? from, DateTime? to)
     {

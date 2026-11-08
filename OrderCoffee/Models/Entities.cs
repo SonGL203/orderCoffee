@@ -229,3 +229,28 @@ public static class Fmt
 
     public static string Payment(PaymentMethod m) => m == PaymentMethod.Cash ? "Tiền mặt" : "Chuyển khoản";
 }
+
+// Đánh giá món sau khi đơn hoàn thành (mỗi đơn chấm mỗi món một lần)
+public class Review
+{
+    public int Id { get; set; }
+    public int OrderId { get; set; }
+    public Order? Order { get; set; }
+    public int ProductId { get; set; }
+    public Product? Product { get; set; }
+    public int? UserId { get; set; }
+    [MaxLength(100)] public string ReviewerName { get; set; } = "";
+    [Range(1, 5)] public int Rating { get; set; }
+    [MaxLength(500)] public string? Comment { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+}
+
+// Món yêu thích của khách đã đăng nhập
+public class FavoriteProduct
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public int ProductId { get; set; }
+    public Product? Product { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+}

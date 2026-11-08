@@ -57,3 +57,11 @@ public class CheckoutVm
     public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
     public string? VoucherCode { get; set; }
 }
+
+public class ReviewStatVm
+{
+    public string Name { get; set; } = "";
+    public int Count { get; set; }
+    public double Avg { get; set; }
+    public int Favorites { get; set; }
+}

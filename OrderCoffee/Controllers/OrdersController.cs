@@ -115,6 +115,8 @@ public class OrdersController(AppDbContext db, OrderService orders, PromotionSer
         if (o == null) return NotFound();
         ViewBag.Bank = config.GetSection("Shop");
         ViewBag.IsOwner = CustomerId != null && o.UserId == CustomerId;
+        ViewBag.Reviewed = (await db.Reviews.Where(r => r.OrderId == o.Id).ToListAsync()).ToDictionary(r => r.ProductId);
+        ViewBag.CanReview = o.Status == OrderStatus.Completed && (o.UserId == null || o.UserId == CustomerId);
         return View(o);
     }
 
@@ -143,6 +145,35 @@ public class OrdersController(AppDbContext db, OrderService orders, PromotionSer
         }
         await orders.CancelAsync(o, "Khách hủy đơn");
         TempData["Success"] = "Đã hủy đơn. Voucher (nếu có) đã được hoàn lại.";
+        return RedirectToAction(nameof(Details), new { code });
+    }
+
+    // Khách chấm sao + nhận xét từng món sau khi đơn hoàn thành (chủ đơn, hoặc người giữ link nếu là khách vãng lai)
+    [HttpPost("Orders/Review/{code}"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> Review(string code, int productId, int rating, string? comment)
+    {
+        var o = await db.Orders.Include(x => x.Items).FirstOrDefaultAsync(x => x.Code == code);
+        if (o == null) return NotFound();
+        if (o.UserId != null && o.UserId != CustomerId) return Forbid();
+        if (o.Status != OrderStatus.Completed || !o.Items.Any(i => i.ProductId == productId) || rating is < 1 or > 5)
+        {
+            TempData["Error"] = "Chỉ đánh giá được món của đơn đã hoàn thành.";
+            return RedirectToAction(nameof(Details), new { code });
+        }
+        if (await db.Reviews.AnyAsync(r => r.OrderId == o.Id && r.ProductId == productId))
+        {
+            TempData["Error"] = "Bạn đã đánh giá món này rồi.";
+            return RedirectToAction(nameof(Details), new { code });
+        }
+        comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim();
+        db.Reviews.Add(new Review
+        {
+            OrderId = o.Id, ProductId = productId, UserId = o.UserId, Rating = rating,
+            Comment = comment is { Length: > 500 } ? comment[..500] : comment,
+            ReviewerName = string.IsNullOrWhiteSpace(o.CustomerName) ? "Khách" : o.CustomerName!
+        });
+        await db.SaveChangesAsync();
+        TempData["Success"] = "Cảm ơn bạn đã đánh giá!";
         return RedirectToAction(nameof(Details), new { code });
     }
 
